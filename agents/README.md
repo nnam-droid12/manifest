@@ -151,6 +151,34 @@ book for reefer loads — two prior temperature-control failures") and
 correctly weighting it as authoritative broker instruction in the risk
 assessment.
 
+## Voice Check-In Agent: real Polly/Transcribe, deliberately not a real phone call
+
+`manifest_agents.tools.voice` makes real Amazon Polly (`synthesize_speech`)
+and Amazon Transcribe (`transcribe_audio`, batch job via S3) calls — neither
+is mocked, and neither is blocked by the account's Bedrock gate (they're
+unrelated services). The one deliberately-not-automated piece is Amazon
+Connect's `StartOutboundVoiceContact`: unlike everything else built in this
+session, actually placing that call rings a real phone number. That's a
+genuine real-world effect outside this sandbox, not a reversible dev-only
+action, so it needs an explicit target number and the user's go-ahead — it's
+wired in the IAM policy (`infra/lib/agent-runtime-stack.ts`) and ready to
+call, but not exercised automatically.
+
+What's verified instead: the actual TTS/STT round trip Connect would carry.
+`voice_checkin.tools.conduct_voice_checkin` speaks the check-in question via
+Polly, and — standing in for a live carrier response over the phone — a
+second Polly clip (a different voice) plays the carrier's side, which then
+goes through real Transcribe exactly as a real call recording would. The
+agent only ever sees the Transcribe output, never the scripted text (see
+`set_simulated_carrier_reply` — set by the test/demo runner, not visible to
+the agent's own reasoning), so its summary is genuinely produced from
+real speech-to-text, not read off a script it was handed.
+
+Run live (`python -m manifest_agents.voice_checkin`) on two scenarios: a
+routine on-schedule check-in and a real breakdown. Both were summarized
+correctly, and the breakdown scenario was explicitly flagged as needing the
+broker's attention rather than folded into a neutral status update.
+
 ## Running things
 
 ```bash

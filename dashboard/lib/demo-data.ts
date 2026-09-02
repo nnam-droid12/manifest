@@ -237,6 +237,24 @@ export const auditTrail: AuditEntry[] = [
       "bullets were getting silently truncated at the first line break.",
     outcome: "success",
   },
+  {
+    id: "a12",
+    agent: "Voice Check-In Agent",
+    loadId: "SHP-3001",
+    timestamp: "2026-09-02T18:02:00Z",
+    summary: "Real Polly + Transcribe round trip verified — correctly distinguished a routine check-in from a real breakdown",
+    reasoning:
+      "Speaks the check-in question via real Amazon Polly, and processes the carrier's spoken reply " +
+      "through real Amazon Transcribe (batch job via S3) — the agent only ever sees the Transcribe " +
+      "output, never a scripted answer, so its summary comes from genuine speech-to-text. Run on two " +
+      "scenarios: a routine reply (\"just passed Nashville, should be in Atlanta by tomorrow morning\") " +
+      "correctly summarized as on-schedule, no action needed; a breakdown reply (\"truck broke down " +
+      "outside Knoxville, mechanic looking at it, could be a few hours\") correctly flagged as a real " +
+      "problem needing the broker's attention rather than folded into a neutral update. The one piece " +
+      "deliberately not exercised: dialing an actual phone number via Amazon Connect, which rings a " +
+      "real phone and needs an explicit number and consent rather than running autonomously.",
+    outcome: "success",
+  },
 ];
 
 export interface Approval {
