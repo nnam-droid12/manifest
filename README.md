@@ -5,6 +5,8 @@
 Built for the [Agents for Humans Hackathon](https://agentsforhumans.devpost.com/) — Professional Agents track.
 
 > Status: in active development. This README tracks build progress phase by phase (see [Build phases](#build-phases)); sections marked `(planned)` describe work not yet landed.
+>
+> **Known blocker:** the deployment AWS account's Bedrock model-invocation quotas for Claude and Amazon Nova are currently held at 0 pending an AWS Support case (a below-default account-trust hold, not a config issue on our end). Reasoning agents run today against a temporary stand-in model via Bedrock Mantle; see [agents/README.md](agents/README.md) for the full explanation and the one-env-var swap back to real Claude/Nova once access clears.
 
 ---
 
@@ -36,7 +38,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 
 | Agent | Job | Status |
 |---|---|---|
-| Load-Matching Agents (swarm) | Continuously scan monitored load boards for freight matching the broker's open lanes and criteria | planned — Phase 1 |
+| Load-Matching Agents (swarm) | Continuously scan monitored load boards for freight matching the broker's open lanes and criteria | working — single agent against SummitBoard; swarm-of-sources still planned |
 | Carrier Vetting & Fraud Detection Agent | FMCSA SAFER lookups + double-brokering red-flag analysis; gates whether outreach can proceed autonomously | planned — Phase 2 |
 | Rate Intelligence Agent | Recommends a target/ceiling rate per lane from historical + market data, using code execution for the actual statistics | planned — Phase 3 |
 | Carrier Outreach Agent | Drafts and negotiates rate confirmations within an authorized range, under Bedrock Guardrails | planned — Phase 3 |

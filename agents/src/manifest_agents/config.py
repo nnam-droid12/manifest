@@ -29,7 +29,11 @@ class Settings:
     fmcsa_webkey: str
 
     load_board_base_url: str
+    load_board_username: str
+    load_board_password: str
     carrier_portal_base_url: str
+    carrier_portal_username: str
+    carrier_portal_password: str
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -50,7 +54,11 @@ class Settings:
             carrier_outreach_guardrail_id=_env("MANIFEST_OUTREACH_GUARDRAIL_ID", ""),
             fmcsa_webkey=_env("FMCSA_WEBKEY", ""),
             load_board_base_url=_env("MOCK_LOAD_BOARD_URL", "http://localhost:4001"),
+            load_board_username=_env("MOCK_LOAD_BOARD_USERNAME", "broker1"),
+            load_board_password=_env("MOCK_LOAD_BOARD_PASSWORD", "manifest2026"),
             carrier_portal_base_url=_env("MOCK_CARRIER_PORTAL_URL", "http://localhost:4002"),
+            carrier_portal_username=_env("MOCK_CARRIER_PORTAL_USERNAME", "swiftline"),
+            carrier_portal_password=_env("MOCK_CARRIER_PORTAL_PASSWORD", "carrier2026"),
         )
 
 
