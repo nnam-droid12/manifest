@@ -50,5 +50,20 @@ def test_search_and_detail_round_trip(load_board_server):
     assert results[0]["destination"] == "Atlanta, GA"
 
     detail = get_load_detail(results[0]["id"])
+    assert detail["origin"] == "Chicago, IL"
+    assert detail["destination"] == "Atlanta, GA"
     assert detail["equipment_type"] == "Dry Van"
     assert detail["status"] == "Available"
+
+
+def test_submit_offer_actually_submits(load_board_server):
+    os.environ["MOCK_LOAD_BOARD_URL"] = LOAD_BOARD_URL
+    from manifest_agents.config import Settings
+    import manifest_agents.config as config_module
+
+    config_module.settings = Settings.from_env()
+
+    from manifest_agents.tools.browser import submit_load_board_offer
+
+    result = submit_load_board_offer("1002", 1650, "broker@manifest-demo.example", "Test offer.")
+    assert result["submitted"] is True

@@ -120,8 +120,13 @@ def get_load_detail(load_id: str) -> dict:
                 el = page.query_selector(f"xpath=//span[text()='{label}']/following-sibling::strong")
                 return el.inner_text().strip() if el else ""
 
+            lane_text = page.query_selector(".detail-card h2").inner_text().strip()
+            origin, _, destination = lane_text.partition("→")
+
             return {
                 "id": load_id,
+                "origin": origin.strip(),
+                "destination": destination.strip(),
                 "equipment_type": field("Equipment"),
                 "commodity": field("Commodity"),
                 "weight": field("Weight"),
@@ -134,5 +139,36 @@ def get_load_detail(load_id: str) -> dict:
                 if page.query_selector(".badge")
                 else "",
             }
+        finally:
+            browser.close()
+
+
+def submit_load_board_offer(load_id: str, offer_rate: float, contact_email: str, message: str) -> dict:
+    """Submit a rate inquiry/offer on a load's detail page via the real HTML form.
+
+    Not decorated as a Strands @tool directly — see
+    manifest_agents.carrier_outreach.guarded_tools.send_rate_offer, which wraps
+    this with a deterministic ceiling-rate check before any submission reaches
+    the carrier.
+    """
+    settings = get_settings()
+
+    with sync_playwright() as playwright:
+        browser, page = _login_and_get_page(
+            playwright, settings.load_board_base_url, settings.load_board_username, settings.load_board_password
+        )
+        try:
+            page.goto(f"{settings.load_board_base_url}/loads/{load_id}")
+            page.fill('input[name="offerRate"]', str(offer_rate))
+            page.fill('input[name="contactEmail"]', contact_email)
+            page.fill('textarea[name="message"]', message)
+            # Scoped to the offer form specifically — the page header also has a
+            # button[type="submit"] (Log Out), which an unscoped selector would
+            # match first and click instead of actually submitting the offer.
+            page.click('.detail-card form button[type="submit"]')
+            page.wait_for_load_state("networkidle")
+
+            confirmed = page.query_selector(".success-box") is not None
+            return {"load_id": load_id, "offer_rate": offer_rate, "submitted": confirmed}
         finally:
             browser.close()
