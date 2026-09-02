@@ -1,0 +1,30 @@
+[
+  {
+    "origin": "Chicago, IL",
+    "destination": "Atlanta, GA",
+    "load_to_truck_ratio": 3.4,
+    "trend": "rising",
+    "note": "Produce-season demand pushing capacity tight through September."
+  },
+  {
+    "origin": "Dallas, TX",
+    "destination": "Houston, TX",
+    "load_to_truck_ratio": 1.6,
+    "trend": "flat",
+    "note": "Short high-density lane, ample regional capacity."
+  },
+  {
+    "origin": "Columbus, OH",
+    "destination": "Newark, NJ",
+    "load_to_truck_ratio": 2.1,
+    "trend": "flat",
+    "note": "Stable Midwest-to-Northeast freight flow."
+  },
+  {
+    "origin": "Denver, CO",
+    "destination": "Salt Lake City, UT",
+    "load_to_truck_ratio": 2.8,
+    "trend": "rising",
+    "note": "Limited flatbed capacity westbound out of Denver."
+  }
+]
