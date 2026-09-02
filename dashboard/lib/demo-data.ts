@@ -186,6 +186,24 @@ export const auditTrail: AuditEntry[] = [
       "same tool signature works unchanged against real photos.",
     outcome: "warning",
   },
+  {
+    id: "a9",
+    agent: "Orchestrator Agent",
+    timestamp: "2026-09-02T17:05:00Z",
+    summary: "Ran the full pipeline on two carriers — both correctly gated to human review, for different reasons",
+    reasoning:
+      "Chained Load-Matching -> Carrier Vetting -> [autonomy gate, enforced in code] -> Rate " +
+      "Intelligence -> Carrier Outreach for Chicago -> Atlanta Reefer. MC-1187765 (Apex Haulers): HIGH " +
+      "risk, real fraud red flags (remit-to mismatch) -> gate refused to invoke Carrier Outreach at all. " +
+      "MC-512873 (Swiftline, a clean long-standing carrier): MEDIUM risk -> also gated, specifically " +
+      "because the live FMCSA outage leaves even this carrier's authority/insurance unverifiable right " +
+      "now — the agent correctly treated \"unverifiable\" as insufficient rather than assuming the best. " +
+      "Neither run reached an offer in this session, which is the gate working as designed under real " +
+      "external conditions, not a demo gap — the downstream Rate Intelligence -> Carrier Outreach " +
+      "mechanics are separately proven working (see the Carrier Outreach entry above, which did place " +
+      "a real offer on a run where vetting was bypassed for that isolated test).",
+    outcome: "info",
+  },
 ];
 
 export interface Approval {

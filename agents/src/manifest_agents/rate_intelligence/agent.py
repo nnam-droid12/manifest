@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel, Field
 from strands import Agent
 
 from manifest_agents.models import get_reasoning_model
@@ -33,12 +34,23 @@ Rules:
 """
 
 
+class RateFigures(BaseModel):
+    """Structured target/ceiling the Orchestrator hands to the Carrier Outreach
+    Agent — parsing dollar figures out of prose for a live negotiation ceiling
+    would be exactly the kind of unreliable extraction this codebase avoids
+    elsewhere (see VettingAssessment, send_rate_offer's code-level check)."""
+
+    target_rate: float = Field(description="Rate to open negotiation near, in dollars.")
+    ceiling_rate: float = Field(description="Hard maximum the Carrier Outreach Agent may offer, in dollars.")
+
+
 @dataclass
 class RateRecommendation:
     origin: str
     destination: str
     equipment_type: str
     narrative: str
+    figures: RateFigures | None
 
 
 def build_rate_intelligence_agent() -> Agent:
@@ -51,9 +63,22 @@ def build_rate_intelligence_agent() -> Agent:
 
 def recommend_rate(origin: str, destination: str, equipment_type: str) -> RateRecommendation:
     agent = build_rate_intelligence_agent()
-    result = agent(
+    # Two calls on the same conversation, deliberately: a structured_output_model
+    # call replaces the final message with bare JSON, which would throw away the
+    # "show your work" narrative the system prompt asks for. Get the narrative
+    # first, then ask the same agent (with its reasoning still in context) for a
+    # clean structured extraction as a fast follow-up.
+    narrative_result = agent(
         f"Recommend a target and ceiling rate for {origin} -> {destination}, {equipment_type}."
     )
+    figures_result = agent(
+        "Now output exactly the target_rate and ceiling_rate you just recommended, as structured data.",
+        structured_output_model=RateFigures,
+    )
     return RateRecommendation(
-        origin=origin, destination=destination, equipment_type=equipment_type, narrative=str(result)
+        origin=origin,
+        destination=destination,
+        equipment_type=equipment_type,
+        narrative=str(narrative_result),
+        figures=figures_result.structured_output,
     )

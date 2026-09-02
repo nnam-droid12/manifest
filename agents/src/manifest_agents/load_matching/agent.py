@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel, Field
 from strands import Agent
 
 from manifest_agents.models import get_reasoning_model
@@ -33,6 +34,23 @@ class LaneCriteria:
     rate_floor: float
 
 
+class BestMatch(BaseModel):
+    """Structured pick for the Orchestrator to hand downstream — same
+    two-call pattern as Rate Intelligence/Carrier Vetting, so the narrative
+    isn't sacrificed to get a reliable load_id out."""
+
+    best_load_id: str | None = Field(
+        description="The load board id of the single best recommended load, or null if none qualify."
+    )
+    reason: str
+
+
+@dataclass
+class MatchResult:
+    narrative: str
+    best_match: BestMatch | None
+
+
 def build_load_matching_agent() -> Agent:
     return Agent(
         model=get_reasoning_model(),
@@ -41,12 +59,17 @@ def build_load_matching_agent() -> Agent:
     )
 
 
-def find_matches(criteria: LaneCriteria) -> str:
+def find_matches(criteria: LaneCriteria) -> MatchResult:
     agent = build_load_matching_agent()
     prompt = (
         f"Broker lane criteria — origin: {criteria.origin}, destination: {criteria.destination}, "
         f"equipment: {criteria.equipment_type}, minimum acceptable rate: ${criteria.rate_floor:,.0f}. "
         "Find and report matching loads."
     )
-    result = agent(prompt)
-    return str(result)
+    narrative_result = agent(prompt)
+    match_result = agent(
+        "Of the loads you just recommended, output the single best one's load_id as structured data "
+        "(null if none qualified).",
+        structured_output_model=BestMatch,
+    )
+    return MatchResult(narrative=str(narrative_result), best_match=match_result.structured_output)

@@ -7,4 +7,6 @@ if __name__ == "__main__":
         equipment_type="",
         rate_floor=1400,
     )
-    print(find_matches(criteria))
+    result = find_matches(criteria)
+    print(result.narrative)
+    print("\nBEST MATCH:", result.best_match)

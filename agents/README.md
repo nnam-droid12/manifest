@@ -58,6 +58,35 @@ key (from nova.amazon.com/act, unrelated to the Bedrock block above) and will
 replace the scripted navigation layer later; the tool signatures agents call
 (`search_load_board`, `get_load_detail`) are designed to stay the same either way.
 
+## The Orchestrator's autonomy gate is real — and the FMCSA outage proves it
+
+`manifest_agents.orchestrator` chains Load-Matching → Carrier Vetting → Rate
+Intelligence → Carrier Outreach for a lane + candidate carrier, and the
+handoff between vetting and outreach is a hard `if not
+vetting.assessment.autonomous_ok: stop` in Python — not a model deciding
+whether to call the outreach tool, same reasoning as `send_rate_offer`'s
+ceiling check.
+
+Running it live against two carriers (`python -m manifest_agents.orchestrator`)
+produced two escalations, for genuinely different reasons:
+
+- **MC-1187765 (Apex Haulers Group) → HIGH risk.** Real fraud red flags: a
+  remit-to entity that doesn't match the carrier's legal name, on top of an
+  unverifiable FMCSA record.
+- **MC-512873 (Swiftline Freight LLC) → MEDIUM risk, still not autonomous.**
+  Clean broker-side record, matching remit-to, a long positive history — but
+  the live FMCSA outage (see above) means authority/insurance status is
+  *still* unverifiable, and the agent correctly won't treat "unverifiable" as
+  "fine" just because everything else looks good.
+
+Neither run reached Carrier Outreach in this session, because both carriers
+genuinely couldn't clear the bar right now — not because the pipeline is
+broken. The downstream stages (Rate Intelligence → Carrier Outreach) are
+independently verified working end to end — see `carrier_outreach`'s own
+verified run, which did place a real offer — so the mechanics are proven;
+what's missing to see the fully-autonomous path in one run is simply a
+carrier that clears FMCSA, which needs the FMCSA service itself back up.
+
 ## Running things
 
 ```bash
