@@ -43,7 +43,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Rate Intelligence Agent | Recommends a target/ceiling rate per lane from historical + market data, using code execution for the actual statistics | working — verified against seeded rate history + market signal |
 | Carrier Outreach Agent | Drafts and negotiates rate confirmations within an authorized range, under Bedrock Guardrails | working — verified end to end; ceiling enforced deterministically in code, Bedrock Guardrails check wired but blocked by the same account-wide Bedrock gate as other agents |
 | Voice Check-In Agent | Places outbound status-check calls via Amazon Connect/Polly/Transcribe when a carrier won't respond by email | planned — Phase 3 |
-| Document Extraction Agent | Textract-based parsing of rate confirmations and BOLs, reconciled against the shipment record | planned — Phase 3 |
+| Document Extraction Agent | Textract-based parsing of rate confirmations and BOLs, reconciled against the shipment record | working — real Textract calls (not blocked by the Bedrock gate), verified catching a real rate mismatch |
 | Cargo Condition Agent | Nova Pro multimodal comparison of pickup vs. delivery cargo photos, flagging condition discrepancies | planned — Phase 4 |
 | Track-and-Trace Agent | Scheduled shipment status checks; reasons about whether a delay is meaningful before escalating | planned — Phase 4 |
 | Customer Update Agent | Proactive shipper-facing status updates at milestones and real delays | planned — Phase 4 |
