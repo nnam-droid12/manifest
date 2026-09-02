@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SummitBoard — Carrier &amp; Broker Login</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="login-box">
+    <h2>SummitBoard</h2>
+    <p style="color:#5a6472;font-size:13px;">Mock load board — demo credentials: <code>broker1</code> / <code>manifest2026</code></p>
+    <% if (error) { %><p class="error"><%= error %></p><% } %>
+    <form method="POST" action="/login">
+      <label>Username</label>
+      <input type="text" name="username" autocomplete="username" required />
+      <label>Password</label>
+      <input type="password" name="password" autocomplete="current-password" required />
+      <button type="submit">Log In</button>
+    </form>
+  </div>
+</body>
+</html>

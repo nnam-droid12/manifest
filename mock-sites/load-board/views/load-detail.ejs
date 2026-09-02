@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SummitBoard — Load <%= load.id %></title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>SummitBoard Load Board</h1>
+    <form method="POST" action="/logout"><button type="submit">Log Out</button></form>
+  </header>
+  <main>
+    <p><a href="/loads" style="color:#0b2e4f;">&larr; Back to search</a></p>
+    <div class="detail-card">
+      <h2><%= load.origin %> &rarr; <%= load.destination %></h2>
+      <span class="badge"><%= load.status %></span>
+      <div class="detail-grid">
+        <div><span>Equipment</span><strong><%= load.equipmentType %></strong></div>
+        <div><span>Commodity</span><strong><%= load.commodity %></strong></div>
+        <div><span>Weight</span><strong><%= load.weight.toLocaleString() %> lbs</strong></div>
+        <div><span>Distance</span><strong><%= load.miles %> mi</strong></div>
+        <div><span>Pickup Date</span><strong><%= load.pickupDate %></strong></div>
+        <div><span>Delivery Date</span><strong><%= load.deliveryDate %></strong></div>
+        <div><span>Posted Rate</span><strong>$<%= load.rate.toLocaleString() %></strong></div>
+        <div><span>Posted By</span><strong><%= load.postedBy %></strong></div>
+      </div>
+
+      <% if (submitted) { %>
+        <div class="success-box">Inquiry submitted. The shipper will respond with a rate confirmation.</div>
+      <% } else { %>
+        <h3>Submit Rate Inquiry</h3>
+        <form method="POST" action="/loads/<%= load.id %>/inquire">
+          <label>Your Offer Rate ($)</label>
+          <input type="number" name="offerRate" required />
+          <label>Contact Email</label>
+          <input type="email" name="contactEmail" required />
+          <label>Message</label>
+          <textarea name="message" rows="3" placeholder="MC# and equipment availability"></textarea>
+          <button type="submit">Send Inquiry</button>
+        </form>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

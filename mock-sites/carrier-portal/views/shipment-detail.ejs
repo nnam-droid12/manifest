@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Swiftline Carrier Portal — <%= shipment.id %></title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Swiftline Carrier Portal</h1>
+    <form method="POST" action="/logout"><button type="submit">Log Out</button></form>
+  </header>
+  <main>
+    <p><a href="/shipments" style="color:#0b2e4f;">&larr; Back to shipments</a></p>
+    <div class="detail-card">
+      <h2><%= shipment.origin %> &rarr; <%= shipment.destination %></h2>
+      <span class="badge"><%= statusSteps[shipment.statusIndex] %></span>
+
+      <div class="detail-grid">
+        <div><span>Shipment ID</span><strong><%= shipment.id %></strong></div>
+        <div><span>Reference #</span><strong><%= shipment.referenceNumber %></strong></div>
+        <div><span>ETA</span><strong><%= shipment.eta %></strong></div>
+        <div><span>Last Update</span><strong><%= new Date(shipment.lastUpdate).toLocaleString() %></strong></div>
+      </div>
+
+      <% if (updated) { %><div class="success-box">Status updated.</div><% } %>
+
+      <h3>Update Status</h3>
+      <form method="POST" action="/shipments/<%= shipment.id %>/update">
+        <label>Status</label>
+        <select name="status">
+          <% statusSteps.forEach(function(step) { %>
+            <option value="<%= step %>"><%= step %></option>
+          <% }); %>
+        </select>
+        <label>Note</label>
+        <textarea name="note" rows="2" placeholder="e.g. Passed Nashville, on schedule"></textarea>
+        <button type="submit">Update</button>
+      </form>
+
+      <h3>Tracking History</h3>
+      <table>
+        <thead><tr><th>Status</th><th>Note</th><th>Time</th></tr></thead>
+        <tbody>
+          <% shipment.history.slice().reverse().forEach(function(h) { %>
+          <tr>
+            <td><%= h.status %></td>
+            <td><%= h.note %></td>
+            <td><%= new Date(h.at).toLocaleString() %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</body>
+</html>

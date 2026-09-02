@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SummitBoard — Available Loads</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>SummitBoard Load Board</h1>
+    <form method="POST" action="/logout"><button type="submit">Log Out</button></form>
+  </header>
+  <main>
+    <form class="filters" method="GET" action="/loads">
+      <div>
+        <label>Origin</label>
+        <input type="text" name="origin" value="<%= query.origin %>" placeholder="e.g. Chicago" />
+      </div>
+      <div>
+        <label>Destination</label>
+        <input type="text" name="destination" value="<%= query.destination %>" placeholder="e.g. Atlanta" />
+      </div>
+      <div>
+        <label>Equipment</label>
+        <select name="equipmentType">
+          <option value="" <%= query.equipmentType === "" ? "selected" : "" %>>Any</option>
+          <option value="Dry Van" <%= query.equipmentType === "Dry Van" ? "selected" : "" %>>Dry Van</option>
+          <option value="Reefer" <%= query.equipmentType === "Reefer" ? "selected" : "" %>>Reefer</option>
+          <option value="Flatbed" <%= query.equipmentType === "Flatbed" ? "selected" : "" %>>Flatbed</option>
+        </select>
+      </div>
+      <div><button type="submit">Search</button></div>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Lane</th>
+          <th>Equipment</th>
+          <th>Pickup</th>
+          <th>Delivery</th>
+          <th>Rate</th>
+          <th>Posted By</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% loads.forEach(function(load) { %>
+        <tr>
+          <td><%= load.origin %> &rarr; <%= load.destination %> <br /><span style="color:#8a93a0;font-size:12px;"><%= load.miles %> mi</span></td>
+          <td><%= load.equipmentType %><br /><span style="color:#8a93a0;font-size:12px;"><%= load.commodity %></span></td>
+          <td><%= load.pickupDate %></td>
+          <td><%= load.deliveryDate %></td>
+          <td>$<%= load.rate.toLocaleString() %></td>
+          <td><%= load.postedBy %></td>
+          <td><a class="row-link" href="/loads/<%= load.id %>">View &rarr;</a></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

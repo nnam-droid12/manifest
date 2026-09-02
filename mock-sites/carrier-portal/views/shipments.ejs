@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Swiftline Carrier Portal — My Shipments</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Swiftline Carrier Portal</h1>
+    <form method="POST" action="/logout"><button type="submit">Log Out</button></form>
+  </header>
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th>Shipment</th>
+          <th>Lane</th>
+          <th>Status</th>
+          <th>ETA</th>
+          <th>Last Update</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% shipments.forEach(function(s) { %>
+        <tr>
+          <td><%= s.id %><br /><span style="color:#8a93a0;font-size:12px;"><%= s.referenceNumber %></span></td>
+          <td><%= s.origin %> &rarr; <%= s.destination %></td>
+          <td><span class="badge"><%= statusSteps[s.statusIndex] %></span></td>
+          <td><%= s.eta %></td>
+          <td><%= new Date(s.lastUpdate).toLocaleString() %></td>
+          <td><a class="row-link" href="/shipments/<%= s.id %>">View &rarr;</a></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

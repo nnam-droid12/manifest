@@ -1,0 +1,20 @@
+{
+  "name": "manifest",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Manifest — an autonomous freight brokerage agent swarm built on the Strands Agents SDK and Amazon Bedrock AgentCore.",
+  "workspaces": [
+    "infra",
+    "dashboard",
+    "mock-sites/load-board",
+    "mock-sites/carrier-portal"
+  ],
+  "scripts": {
+    "mock:load-board": "npm run start --workspace mock-sites/load-board",
+    "mock:carrier-portal": "npm run start --workspace mock-sites/carrier-portal",
+    "dashboard:dev": "npm run dev --workspace dashboard",
+    "infra:synth": "npm run synth --workspace infra",
+    "infra:deploy": "npm run deploy --workspace infra"
+  },
+  "license": "MIT"
+}

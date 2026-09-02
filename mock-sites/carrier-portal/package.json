@@ -1,0 +1,16 @@
+{
+  "name": "manifest-mock-carrier-portal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mock carrier tracking portal — mirrors a small carrier's own shipment-status site for the Track-and-Trace Agent to operate against via Nova Act.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "ejs": "^3.1.10"
+  }
+}
