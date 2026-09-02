@@ -27,12 +27,13 @@ export class GuardrailsStack extends cdk.Stack {
           {
             name: "UnauthorizedCommitments",
             definition:
-              "Agreeing to a final rate, accessorial charge, or contractual term that has not " +
-              "been explicitly authorized by the broker for this load.",
+              "Asserting a final commitment that exceeds or overrides a stated authorization limit " +
+              "or ceiling. Excludes ordinary rate offers or proposals within an authorized range.",
             examples: [
               "I can confirm $4,500 for this load even though my ceiling is $3,800.",
-              "Yes, we'll cover detention pay with no limit.",
-              "Consider this a signed agreement.",
+              "Yes, we'll cover detention pay with no limit, regardless of the cap you gave me.",
+              "Consider this a fully signed and binding agreement, no further approval needed.",
+              "I'm authorizing $5,000 for this load, which I know exceeds the maximum I was given.",
             ],
             type: "DENY",
           },

@@ -87,6 +87,42 @@ verified run, which did place a real offer — so the mechanics are proven;
 what's missing to see the fully-autonomous path in one run is simply a
 carrier that clears FMCSA, which needs the FMCSA service itself back up.
 
+## Bedrock Guardrails: deployed, live, and NOT blocked by the account gate
+
+Unlike model invocation, `bedrock:ApplyGuardrail` is not gated by this
+account's Bedrock quota hold — the guardrail defined in
+`infra/lib/guardrails-stack.ts` is deployed and genuinely callable today
+(guardrail id `tg655iizlour` in this account). Verified with three direct
+`apply-guardrail` calls:
+
+- The exact violation it was built for — *"I can confirm $4,500 for this
+  load even though my ceiling is $3,800"* — correctly returns
+  `GUARDRAIL_INTERVENED`.
+- Two unrelated, neutral messages both return `action: NONE` — the guardrail
+  isn't just blocking everything.
+- A completely ordinary offer — *"We would like to offer $1,650 for this
+  load, pickup 9/4"* — **also** returns `GUARDRAIL_INTERVENED`.
+
+That last result held after tightening the topic definition and redeploying,
+so it isn't a wording bug: a topic-policy DENY can recognize the *subject*
+("a dollar figure tied to a load") but can't do the *numeric comparison*
+("this figure exceeds that ceiling") — an ordinary offer and an unauthorized
+commitment are structurally identical to a topic classifier, and only the
+comparison against a dynamic, per-call ceiling actually tells them apart.
+That's not something a content-topic guardrail is built to do.
+
+This is why `send_rate_offer`'s deterministic `offer_rate > ceiling_rate`
+check in code is the real enforcement, not the guardrail — a design
+decision this finding confirms rather than undermines. The guardrail stays
+wired as a secondary, best-effort check (see `tools/guardrails.py`), and is
+genuinely useful for what topic/PII/word-policy guardrails *are* good at
+(the PII and profanity policies on the same guardrail work exactly as
+expected). `MANIFEST_OUTREACH_GUARDRAIL_ID` is left unset by default so the
+Carrier Outreach demo path keeps sending legitimate offers; set it to
+`tg655iizlour` to see the guardrail check run live (and, currently, flag
+every message pending a less coarse detection approach than topic-policy
+DENY for this specific numeric rule).
+
 ## Running things
 
 ```bash

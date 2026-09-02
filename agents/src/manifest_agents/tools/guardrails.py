@@ -3,11 +3,20 @@
 This is a secondary layer, not the primary enforcement — see
 manifest_agents.carrier_outreach.guarded_tools.send_rate_offer for the
 deterministic ceiling-rate check that holds regardless of whether this call
-succeeds. Bedrock Guardrails' ApplyGuardrail lives behind classic
-bedrock-runtime, which is currently blocked account-wide (same gate as model
-invocation — see agents/README.md), so this degrades to "not checked" rather
-than blocking outreach entirely on an infrastructure outage unrelated to the
-message's actual content.
+succeeds.
+
+Unlike model invocation, ApplyGuardrail is NOT blocked by this account's
+Bedrock quota gate — verified live, deployed via infra/lib/guardrails-stack.ts
+(see agents/README.md for the full writeup). It does correctly catch the
+scenario it was built for ("I can confirm $4,500 even though my ceiling is
+$3,800" -> GUARDRAIL_INTERVENED). But live testing also found a real
+precision limit: a topic-policy DENY can't do the numeric comparison
+"offer_rate > ceiling" — it can only recognize the general subject (a dollar
+figure tied to a load), so it flags ordinary offers too, identically to
+violations. That's not a bug to route around here; it's confirmation that the
+deterministic check in send_rate_offer has to be the real enforcement, and
+this stays a best-effort secondary signal (PII/profanity checks on outgoing
+text, where topic-matching is actually the right tool, work as expected).
 """
 
 import boto3

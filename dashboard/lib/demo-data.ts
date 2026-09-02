@@ -121,8 +121,7 @@ export const auditTrail: AuditEntry[] = [
       "Confirmed load 1002 details via get_load_detail, then sent a $1,650 linehaul offer referencing " +
       "the Chicago → Atlanta Reefer / Frozen Foods load. send_rate_offer enforces the ceiling in code " +
       "(not just via prompt instruction) — an offer above $1,680 would have been refused before " +
-      "reaching the carrier regardless of the model's output. Bedrock Guardrails check on the message " +
-      "text ran best-effort (currently unreachable pending the account's Bedrock access case).",
+      "reaching the carrier regardless of the model's output.",
     outcome: "success",
   },
   {
@@ -202,6 +201,23 @@ export const auditTrail: AuditEntry[] = [
       "external conditions, not a demo gap — the downstream Rate Intelligence -> Carrier Outreach " +
       "mechanics are separately proven working (see the Carrier Outreach entry above, which did place " +
       "a real offer on a run where vetting was bypassed for that isolated test).",
+    outcome: "info",
+  },
+  {
+    id: "a10",
+    agent: "Bedrock Guardrails (infra verification)",
+    timestamp: "2026-09-02T17:20:00Z",
+    summary: "Guardrail deployed and live — catches the target violation, but topic policy can't do numeric comparisons",
+    reasoning:
+      "Deployed the Carrier Outreach Guardrail via CDK and called ApplyGuardrail directly three times. " +
+      "It correctly blocked the exact scenario it was built for (\"I can confirm $4,500 even though my " +
+      "ceiling is $3,800\" -> GUARDRAIL_INTERVENED), and correctly passed two unrelated neutral messages " +
+      "(action: NONE) — so it isn't just blocking everything. But an ordinary legitimate offer (\"we " +
+      "would like to offer $1,650 for this load\") also tripped it, and tightening the topic definition " +
+      "and redeploying didn't change that: a topic-policy DENY can recognize the subject (a dollar " +
+      "figure tied to a load) but can't compare it against a dynamic per-call ceiling — only code can do " +
+      "that arithmetic. This confirms, rather than undermines, why send_rate_offer's deterministic check " +
+      "is the real enforcement and the guardrail stays a secondary layer.",
     outcome: "info",
   },
 ];
