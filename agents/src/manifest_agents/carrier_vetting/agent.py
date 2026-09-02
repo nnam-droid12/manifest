@@ -7,6 +7,7 @@ from strands import Agent
 from manifest_agents.models import get_reasoning_model
 from manifest_agents.tools.carrier_records import get_broker_carrier_record
 from manifest_agents.tools.fmcsa import lookup_carrier_by_dot, lookup_carrier_by_mc
+from manifest_agents.tools.playbook import search_playbook
 
 SYSTEM_PROMPT = """\
 You are the Carrier Vetting & Fraud Detection Agent for Manifest, an AI freight
@@ -45,6 +46,14 @@ misconfigured), do not silently skip that check or guess at authority status —
 say plainly that FMCSA verification could not be completed, and factor that gap
 itself into the risk level: an unverifiable carrier is not the same as a
 verified-clean one, and should not be cleared for autonomous outreach.
+
+Also call search_playbook with the carrier's name (and equipment type/lane if
+you know them) — the broker may have already written down a standing rule
+about this exact carrier (a blacklist, a known equipment issue) that should
+override or reinforce whatever FMCSA and the broker record show. If it
+returns a relevant note, treat it as authoritative broker instruction, not
+just one more data point — e.g. a "never book for X" note means HIGH risk and
+no autonomy regardless of how clean everything else looks.
 
 Do not just output a bare score. Produce a plain-language risk assessment: what
 you checked, exactly what you found, and why it does or doesn't concern you.
@@ -92,7 +101,7 @@ def build_carrier_vetting_agent() -> Agent:
     return Agent(
         model=get_reasoning_model(),
         system_prompt=SYSTEM_PROMPT,
-        tools=[lookup_carrier_by_mc, lookup_carrier_by_dot, get_broker_carrier_record],
+        tools=[lookup_carrier_by_mc, lookup_carrier_by_dot, get_broker_carrier_record, search_playbook],
     )
 
 

@@ -220,6 +220,23 @@ export const auditTrail: AuditEntry[] = [
       "is the real enforcement and the guardrail stays a secondary layer.",
     outcome: "info",
   },
+  {
+    id: "a11",
+    agent: "Playbook & Lane-History Agent",
+    timestamp: "2026-09-02T17:35:00Z",
+    summary: "Surfaced a real blacklist note for MC-1042233 and correctly weighted it into Carrier Vetting's risk call",
+    reasoning:
+      "Real Bedrock Knowledge Bases need a working embedding model to ingest content — checked " +
+      "directly (Titan Embeddings via InvokeModel), same account-wide block as Claude/Nova. Standing in " +
+      "with deterministic keyword retrieval over the same source notes a real KB would ingest. Wired as " +
+      "a tool into the Carrier Vetting Agent: asked to assess MC-1042233 (Rapid Transit Logistics), it " +
+      "genuinely called search_playbook (confirmed via direct tool-call inspection, not just narrative " +
+      "text) and correctly surfaced \"never book for reefer loads — two prior temperature-control " +
+      "failures,\" distinguishing it from the carrier record's own separate notes field and treating it " +
+      "as authoritative. Building this also caught and fixed a real parsing bug: multi-line markdown " +
+      "bullets were getting silently truncated at the first line break.",
+    outcome: "success",
+  },
 ];
 
 export interface Approval {

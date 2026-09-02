@@ -123,6 +123,34 @@ Carrier Outreach demo path keeps sending legitimate offers; set it to
 every message pending a less coarse detection approach than topic-policy
 DENY for this specific numeric rule).
 
+## Playbook & Lane-History Agent: retrieval stand-in for Bedrock Knowledge Bases
+
+A real Bedrock Knowledge Base needs a working embedding model to ingest
+content — checked directly (`amazon.titan-embed-text-v2:0` via
+`InvokeModel`), and it fails with the identical "Error 002: Access to
+Bedrock models is not allowed for this account" as Claude and Nova. So
+`manifest_agents.tools.playbook.search_playbook` stands in with deterministic
+keyword-overlap scoring over the same source files
+(`seed-data/playbook/*.md`) a real Knowledge Base would ingest — cruder than
+real semantic search, but the same contract (ask a question, get back
+ranked precedent), and it swaps to a real `bedrock-agent-runtime` Retrieve
+call without touching any caller once embedding access clears.
+
+Building this caught a real bug worth noting: the first version of the note
+parser only read lines starting with `- `, silently truncating any bullet
+that wraps onto a second markdown line (which most of the seed notes do —
+e.g. "Never book Carrier X for" got cut off before "temperature-controlled
+loads..."). Fixed to join wrapped continuation lines into one note; verified
+by direct inspection of the loaded notes, not just by eyeballing agent
+output that might have papered over it.
+
+Also wired `search_playbook` into the Carrier Vetting Agent as a cross-agent
+integration — verified live (with actual tool-call inspection, not just
+narrative text) surfacing the exact blacklist note for MC-1042233 ("never
+book for reefer loads — two prior temperature-control failures") and
+correctly weighting it as authoritative broker instruction in the risk
+assessment.
+
 ## Running things
 
 ```bash
