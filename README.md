@@ -7,6 +7,8 @@ Built for the [Agents for Humans Hackathon](https://agentsforhumans.devpost.com/
 > Status: in active development. This README tracks build progress phase by phase (see [Build phases](#build-phases)); sections marked `(planned)` describe work not yet landed.
 >
 > **Known blocker:** the deployment AWS account's Bedrock model-invocation quotas for Claude and Amazon Nova are currently held at 0 pending an AWS Support case (a below-default account-trust hold, not a config issue on our end). Reasoning agents run today against a temporary stand-in model via Bedrock Mantle; see [agents/README.md](agents/README.md) for the full explanation and the one-env-var swap back to real Claude/Nova once access clears.
+>
+> **Live dashboard:** https://d3aw7wk0rjfln6.cloudfront.net — deployed to S3 + CloudFront via CDK. Populated with a real, verified snapshot of this session's agent runs (see the Audit Trail tab); not yet wired to a live backend feed.
 
 ---
 
@@ -49,7 +51,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Customer Update Agent | Proactive shipper-facing status updates at milestones and real delays | planned — Phase 4 |
 | Playbook & Lane-History Agent | RAG over a Bedrock Knowledge Base of the broker's own historical loads and playbook notes | planned — Phase 5 |
 | Orchestrator Agent | Coordinates the swarm per active load; maintains state in AgentCore Memory; decides autonomous vs. human-review paths | planned — Phase 5 |
-| Broker Dashboard | The human-in-the-loop surface: active loads, audit trail, approvals queue, analytics | planned — Phase 7 |
+| Broker Dashboard | The human-in-the-loop surface: active loads, audit trail, approvals queue, analytics | working — deployed at https://d3aw7wk0rjfln6.cloudfront.net; populated from a real captured snapshot of agent runs, not yet live-wired to a backend |
 
 ---
 
