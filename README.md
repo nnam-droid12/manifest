@@ -39,7 +39,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Agent | Job | Status |
 |---|---|---|
 | Load-Matching Agents (swarm) | Continuously scan monitored load boards for freight matching the broker's open lanes and criteria | working — single agent against SummitBoard; swarm-of-sources still planned |
-| Carrier Vetting & Fraud Detection Agent | FMCSA SAFER lookups + double-brokering red-flag analysis; gates whether outreach can proceed autonomously | planned — Phase 2 |
+| Carrier Vetting & Fraud Detection Agent | FMCSA SAFER lookups + double-brokering red-flag analysis; gates whether outreach can proceed autonomously | working — cross-referencing logic verified (remit-to mismatch → HIGH risk, human sign-off); live FMCSA calls blocked by an FMCSA-side outage, see [agents/README.md](agents/README.md) |
 | Rate Intelligence Agent | Recommends a target/ceiling rate per lane from historical + market data, using code execution for the actual statistics | planned — Phase 3 |
 | Carrier Outreach Agent | Drafts and negotiates rate confirmations within an authorized range, under Bedrock Guardrails | planned — Phase 3 |
 | Voice Check-In Agent | Places outbound status-check calls via Amazon Connect/Polly/Transcribe when a carrier won't respond by email | planned — Phase 3 |

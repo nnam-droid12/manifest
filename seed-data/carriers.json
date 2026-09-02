@@ -1,0 +1,42 @@
+[
+  {
+    "mc_number": "MC-512873",
+    "dot_number": "3456120",
+    "legal_name": "Swiftline Freight LLC",
+    "remit_to_name": "Swiftline Freight LLC",
+    "remit_to_email": "billing@swiftlinefreight.com",
+    "contact_email": "dispatch@swiftlinefreight.com",
+    "contact_phone": "312-555-0148",
+    "notes": "Long-standing carrier, used repeatedly on CHI-ATL and DAL-HOU lanes with no incidents."
+  },
+  {
+    "mc_number": "MC-1042233",
+    "dot_number": "4118876",
+    "legal_name": "Rapid Transit Logistics LLC",
+    "remit_to_name": "Rapid Transit Logistics LLC",
+    "remit_to_email": "ap@rapidtransitlogistics.com",
+    "contact_email": "ops@rapidtransitlogistics.com",
+    "contact_phone": "469-555-0177",
+    "notes": "Flagged in broker playbook: do not book for reefer loads, prior temperature-control failures."
+  },
+  {
+    "mc_number": "MC-998214",
+    "dot_number": "4402910",
+    "legal_name": "Northline Freight Solutions Inc",
+    "remit_to_name": "Northline Freight Solutions Inc",
+    "remit_to_email": "accounting@northlinefreight.com",
+    "contact_email": "dispatch@northlinefreight.com",
+    "contact_phone": "614-555-0132",
+    "notes": "Regular carrier on COL-EWR lane."
+  },
+  {
+    "mc_number": "MC-1187765",
+    "dot_number": "4519002",
+    "legal_name": "Apex Haulers Group",
+    "remit_to_name": "Silverline Payables LLC",
+    "remit_to_email": "payments@silverlinepayables-invoices.com",
+    "contact_email": "newloads@apexhaulersgroup.net",
+    "contact_phone": "702-555-0199",
+    "notes": "First contact this week, cold-emailed asking for a load. Remit-to entity name does not match carrier's legal name."
+  }
+]

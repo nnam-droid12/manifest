@@ -29,6 +29,21 @@ export MANIFEST_MODEL_PROVIDER=bedrock_mantle   # stand-in, works today
 See `manifest_agents/models.py` for both branches (`get_reasoning_model`,
 `get_vision_model`).
 
+## FMCSA SAFER lookups: currently blocked by an FMCSA outage, not us
+
+The Carrier Vetting & Fraud Detection Agent's FMCSA tool
+(`manifest_agents/tools/fmcsa.py`) calls the real, free, public QCMobile API —
+by design, this one is not mocked. As of this writing FMCSA's Mobile Developer
+site and QCMobile web services are down entirely (confirmed: the docs/signup
+page 403s for everyone, not just us), and webKey registration now requires a
+Login.gov account rather than just an email. Nothing to do here but wait for
+FMCSA to restore service, then register a key and set `FMCSA_WEBKEY`.
+
+The tool degrades gracefully in the meantime — a failed lookup returns a
+structured `{"error": ...}` dict rather than raising, so the agent can reason
+about "FMCSA lookup unavailable" as its own signal (e.g. recommend human
+review) rather than crashing.
+
 ## Browser automation: Playwright standing in for Nova Act
 
 `manifest_agents/tools/browser.py` drives the mock load board with a real
