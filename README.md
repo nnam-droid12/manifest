@@ -47,7 +47,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Voice Check-In Agent | Places outbound status-check calls via Amazon Connect/Polly/Transcribe when a carrier won't respond by email | planned — Phase 3 |
 | Document Extraction Agent | Textract-based parsing of rate confirmations and BOLs, reconciled against the shipment record | working — real Textract calls (not blocked by the Bedrock gate), verified catching a real rate mismatch |
 | Cargo Condition Agent | Nova Pro multimodal comparison of pickup vs. delivery cargo photos, flagging condition discrepancies | planned — Phase 4 |
-| Track-and-Trace Agent | Scheduled shipment status checks; reasons about whether a delay is meaningful before escalating | planned — Phase 4 |
+| Track-and-Trace Agent | Scheduled shipment status checks; reasons about whether a delay is meaningful before escalating | working — verified against the mock carrier portal in both an on-track and a genuinely-delayed scenario; correctly escalates only the latter |
 | Customer Update Agent | Proactive shipper-facing status updates at milestones and real delays | planned — Phase 4 |
 | Playbook & Lane-History Agent | RAG over a Bedrock Knowledge Base of the broker's own historical loads and playbook notes | planned — Phase 5 |
 | Orchestrator Agent | Coordinates the swarm per active load; maintains state in AgentCore Memory; decides autonomous vs. human-review paths | planned — Phase 5 |

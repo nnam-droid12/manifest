@@ -139,6 +139,21 @@ export const auditTrail: AuditEntry[] = [
       "regardless of how small the gap.",
     outcome: "warning",
   },
+  {
+    id: "a6",
+    agent: "Track-and-Trace Agent",
+    loadId: "1002 / SHP-3001",
+    timestamp: "2026-09-02T16:10:00Z",
+    summary: "Checked SHP-3001 against the promised 2026-09-07 delivery — on track, no escalation",
+    reasoning:
+      "check_shipment_status returned status \"In Transit\", ETA 2026-09-03, last update same-day. " +
+      "Compared against the promised delivery date (2026-09-07): the ETA is 4 days ahead of the " +
+      "promise, so this is on schedule — no escalation. Re-run against a deliberately earlier promised " +
+      "date (2026-09-01) to verify the escalation path itself works: with that promise, the same ETA " +
+      "(2026-09-03) is 2 days late, and the agent correctly flagged \"escalate: ETA is past the promised " +
+      "delivery date\" — confirming it reasons about significance rather than just running a fixed rule.",
+    outcome: "info",
+  },
 ];
 
 export interface Approval {

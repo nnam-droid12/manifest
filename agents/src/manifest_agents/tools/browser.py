@@ -143,6 +143,71 @@ def get_load_detail(load_id: str) -> dict:
             browser.close()
 
 
+@tool
+def check_shipment_status(shipment_id: str) -> dict:
+    """Check a shipment's current status on the carrier's own tracking portal.
+
+    Logs into the carrier portal and reads the shipment detail page — status,
+    ETA, last-update time, and full tracking history — driven by page
+    structure, same pattern as the load-board tools.
+
+    Args:
+        shipment_id: The carrier portal's identifier for the shipment, e.g. "SHP-3001".
+
+    Returns:
+        A dict with: id, origin, destination, reference_number, status, eta,
+        last_update, and history (a list of {status, note, at} entries, most
+        recent first).
+    """
+    settings = get_settings()
+
+    with sync_playwright() as playwright:
+        browser, page = _login_and_get_page(
+            playwright,
+            settings.carrier_portal_base_url,
+            settings.carrier_portal_username,
+            settings.carrier_portal_password,
+        )
+        try:
+            page.goto(f"{settings.carrier_portal_base_url}/shipments/{shipment_id}")
+            page.wait_for_load_state("networkidle")
+
+            def field(label: str) -> str:
+                el = page.query_selector(f"xpath=//span[text()='{label}']/following-sibling::strong")
+                return el.inner_text().strip() if el else ""
+
+            lane_text = page.query_selector(".detail-card h2").inner_text().strip()
+            origin, _, destination = lane_text.partition("→")
+
+            history = []
+            for row in page.query_selector_all("table tbody tr"):
+                cells = row.query_selector_all("td")
+                if len(cells) < 3:
+                    continue
+                history.append(
+                    {
+                        "status": cells[0].inner_text().strip(),
+                        "note": cells[1].inner_text().strip(),
+                        "at": cells[2].inner_text().strip(),
+                    }
+                )
+
+            return {
+                "id": shipment_id,
+                "origin": origin.strip(),
+                "destination": destination.strip(),
+                "reference_number": field("Reference #"),
+                "status": page.query_selector(".badge").inner_text().strip()
+                if page.query_selector(".badge")
+                else "",
+                "eta": field("ETA"),
+                "last_update": field("Last Update"),
+                "history": history,
+            }
+        finally:
+            browser.close()
+
+
 def submit_load_board_offer(load_id: str, offer_rate: float, contact_email: str, message: str) -> dict:
     """Submit a rate inquiry/offer on a load's detail page via the real HTML form.
 
