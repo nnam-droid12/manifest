@@ -154,6 +154,21 @@ export const auditTrail: AuditEntry[] = [
       "delivery date\" — confirming it reasons about significance rather than just running a fixed rule.",
     outcome: "info",
   },
+  {
+    id: "a7",
+    agent: "Customer Update Agent",
+    loadId: "SHP-3001",
+    timestamp: "2026-09-02T16:14:00Z",
+    summary: "Drafted delay update to Halden Foods — direct about the 2-day slip, no internal jargon",
+    reasoning:
+      "Given the Track-and-Trace Agent's escalation as the trigger, called check_shipment_status to " +
+      "confirm current details, then wrote a customer-facing message: named the new expected arrival " +
+      "(Sept 3, two days past the Sept 1 promise) plainly, without over-apologizing or leaking internal " +
+      "details (no mention of the carrier, the agent swarm, or negotiated rates). Re-run with a routine " +
+      "\"delivered\" milestone on a different shipment produced a deliberately shorter, purely positive " +
+      "message — confirming tone actually adapts to the trigger rather than using one template for both.",
+    outcome: "success",
+  },
 ];
 
 export interface Approval {
