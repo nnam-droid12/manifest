@@ -30,10 +30,29 @@ export class DashboardHostingStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    const cleanUrlRewrite = new cloudfront.Function(this, "CleanUrlRewrite", {
+      code: cloudfront.FunctionCode.fromInline(`
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          if (uri.endsWith("/")) {
+            request.uri = uri + "index.html";
+          } else if (!uri.includes(".")) {
+            request.uri = uri + ".html";
+          }
+          return request;
+        }
+      `),
+      runtime: cloudfront.FunctionRuntime.JS_2_0,
+    });
+
     this.distribution = new cloudfront.Distribution(this, "DashboardDistribution", {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        functionAssociations: [
+          { function: cleanUrlRewrite, eventType: cloudfront.FunctionEventType.VIEWER_REQUEST },
+        ],
       },
       defaultRootObject: "index.html",
       errorResponses: [
