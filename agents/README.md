@@ -27,7 +27,12 @@ export MANIFEST_MODEL_PROVIDER=bedrock_mantle   # stand-in, works today
 ```
 
 See `manifest_agents/models.py` for both branches (`get_reasoning_model`,
-`get_vision_model`).
+`get_vision_model`). Note the vision branch specifically uses Strands'
+Chat-Completions provider (`strands.models.openai.OpenAIModel`), not the
+Responses provider used for text (`openai_responses.OpenAIResponsesModel`) —
+Mantle's `/v1/responses` endpoint 400s on image content ("did not match any
+expected variant") for the vision stand-in model; `/v1/chat/completions` is
+the shape it actually supports for multimodal input.
 
 ## FMCSA SAFER lookups: currently blocked by an FMCSA outage, not us
 

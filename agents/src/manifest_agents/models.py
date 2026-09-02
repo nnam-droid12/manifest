@@ -33,13 +33,20 @@ def get_reasoning_model(model_id: str | None = None) -> Model:
 
 
 def get_vision_model() -> Model:
-    """Multimodal model for the Cargo Condition Agent. Same provider-swap rule as above."""
+    """Multimodal model for the Cargo Condition Agent. Same provider-swap rule as above.
+
+    Uses the Chat Completions provider (not OpenAIResponsesModel) for the
+    Mantle stand-in specifically: the Responses API path
+    (`/v1/responses`) rejects image content on Mantle's catalog models with a
+    400 ("did not match any expected variant"); `/v1/chat/completions` is the
+    shape Mantle actually supports for vision input.
+    """
     provider = os.environ.get("MANIFEST_MODEL_PROVIDER", "bedrock")
 
     if provider == "bedrock_mantle":
-        from strands.models.openai_responses import OpenAIResponsesModel
+        from strands.models.openai import OpenAIModel
 
-        return OpenAIResponsesModel(
+        return OpenAIModel(
             bedrock_mantle_config={"region": os.environ.get("AWS_REGION", "us-east-1")},
             model_id=os.environ.get(
                 "MANIFEST_MANTLE_VISION_STANDIN_MODEL_ID", "qwen.qwen3-vl-235b-a22b-instruct"

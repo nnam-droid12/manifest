@@ -169,6 +169,23 @@ export const auditTrail: AuditEntry[] = [
       "message — confirming tone actually adapts to the trigger rather than using one template for both.",
     outcome: "success",
   },
+  {
+    id: "a8",
+    agent: "Cargo Condition Agent",
+    loadId: "1002",
+    timestamp: "2026-09-02T16:32:00Z",
+    summary: "Pickup vs. delivery photo comparison: DISCREPANCY FOUND — crushed box, new puncture mark",
+    reasoning:
+      "Given two photos of the same pallet (matched via the BOL REF-88213 marker visible in both), the " +
+      "multimodal model found the same shipment intact at pickup and identified two real changes at " +
+      "delivery: a torn/crushed top flap on the left box exposing its contents, and a new circular " +
+      "puncture mark on the right box that wasn't present before. Re-run against a clean pair (same " +
+      "photo twice) correctly reported \"condition match — no discrepancy\" rather than manufacturing a " +
+      "finding — confirms this isn't a model that flags damage by default regardless of input. Photos " +
+      "are synthetic test images (Pillow-drawn, not real freight photos) generated for this verification; " +
+      "same tool signature works unchanged against real photos.",
+    outcome: "warning",
+  },
 ];
 
 export interface Approval {
