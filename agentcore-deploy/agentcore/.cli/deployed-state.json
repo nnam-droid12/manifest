@@ -1,0 +1,17 @@
+{
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "ManifestOrchestrator": {
+            "runtimeId": "ManifestSwarm_ManifestOrchestrator-T7BgTuBqy0",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:507041536887:runtime/ManifestSwarm_ManifestOrchestrator-T7BgTuBqy0",
+            "roleArn": "arn:aws:iam::507041536887:role/AgentCore-ManifestSwarm-d-ApplicationAgentManifestO-YuF8eTGimQZf"
+          }
+        },
+        "stackName": "AgentCore-ManifestSwarm-default",
+        "deployHash": "66be417bc4b3f1ee"
+      }
+    }
+  }
+}

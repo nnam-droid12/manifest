@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.agentcore.aws.dev/v1/agentcore.json",
+  "name": "ManifestSwarm",
+  "version": 1,
+  "managedBy": "CDK",
+  "tags": {
+    "agentcore:created-by": "agentcore-cli",
+    "agentcore:project-name": "ManifestSwarm"
+  },
+  "runtimes": [
+    {
+      "name": "ManifestOrchestrator",
+      "description": "Manifest's trust-and-safety and pricing tools, hosted on Bedrock AgentCore",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/ManifestOrchestrator/",
+      "runtimeVersion": "PYTHON_3_14",
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP",
+      "envVars": [
+        { "name": "MANIFEST_MODEL_PROVIDER", "value": "bedrock_mantle" },
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "MANIFEST_OUTREACH_GUARDRAIL_ID", "value": "tg655iizlour" }
+      ],
+      "additionalPolicies": ["guardrail-policy.json"]
+    }
+  ],
+  "memories": [],
+  "knowledgeBases": [],
+  "credentials": [],
+  "evaluators": [],
+  "onlineEvalConfigs": [],
+  "agentCoreGateways": [],
+  "policyEngines": [],
+  "configBundles": [],
+  "abTests": [],
+  "harnesses": [],
+  "datasets": [],
+  "payments": []
+}

@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ApplyOutreachGuardrail",
+      "Effect": "Allow",
+      "Action": "bedrock:ApplyGuardrail",
+      "Resource": "arn:aws:bedrock:us-east-1:507041536887:guardrail/tg655iizlour"
+    },
+    {
+      "Sid": "BedrockMantleInference",
+      "Effect": "Allow",
+      "Action": "bedrock-mantle:*",
+      "Resource": "*"
+    }
+  ]
+}

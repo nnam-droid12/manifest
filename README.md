@@ -50,7 +50,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Track-and-Trace Agent | Scheduled shipment status checks; reasons about whether a delay is meaningful before escalating | working — verified against the mock carrier portal in both an on-track and a genuinely-delayed scenario; correctly escalates only the latter |
 | Customer Update Agent | Proactive shipper-facing status updates at milestones and real delays | working — verified drafting both a delay update (direct, no over-apologizing) and a delivered-milestone update (brief, positive) from real shipment data |
 | Playbook & Lane-History Agent | RAG over a Bedrock Knowledge Base of the broker's own historical loads and playbook notes | working (retrieval stand-in) — a real Bedrock Knowledge Base needs a working embedding model, which is blocked by the same account-wide quota gate (verified — Titan Embeddings fails identically to Claude/Nova). Standing in with deterministic keyword retrieval over the same source notes; verified both surfacing real precedent and honestly reporting "no precedent" rather than inventing one. Also wired into Carrier Vetting as a cross-agent integration — verified live pulling a carrier-specific blacklist note into a risk assessment |
-| Orchestrator Agent | Coordinates the swarm per active load; maintains state in AgentCore Memory; decides autonomous vs. human-review paths | working (autonomy gate) — chains Load-Matching → Carrier Vetting → [gate] → Rate Intelligence → Carrier Outreach; the gate is enforced in code, not left to a model's judgment. Verified live on two carriers — both correctly escalated to human review (one for real fraud red flags, one because the live FMCSA outage leaves even a clean long-standing carrier unverifiable); see [agents/README.md](agents/README.md) for why that's the gate working as designed, not a demo gap. AgentCore Memory persistence lands with Phase 6 deployment |
+| Orchestrator Agent | Coordinates the swarm per active load; maintains state in AgentCore Memory; decides autonomous vs. human-review paths | working, **deployed live to Bedrock AgentCore Runtime** — chains Load-Matching → Carrier Vetting → [gate] → Rate Intelligence → Carrier Outreach locally; the gate is enforced in code, not left to a model's judgment. Verified live on two carriers — both correctly escalated to human review (one for real fraud red flags, one because the live FMCSA outage leaves even a clean long-standing carrier unverifiable). The AgentCore-hosted version (real FMCSA/rate/playbook/Guardrails tools) is `agentcore invoke`-able today — see [agentcore-deploy/README.md](agentcore-deploy/README.md). AgentCore Memory (persistent per-shipment state) is the next increment |
 | Broker Dashboard | The human-in-the-loop surface: active loads, audit trail, approvals queue, analytics | working — deployed at https://d3aw7wk0rjfln6.cloudfront.net; populated from a real captured snapshot of agent runs, not yet live-wired to a backend |
 
 ---
@@ -79,7 +79,9 @@ Bedrock AgentCore · Bedrock (Claude) · Bedrock Guardrails · Bedrock Knowledge
 
 ## 4. Architecture
 
-`(planned — Phase 8)` — full swarm diagram covering the agent layer, AgentCore, the Bedrock model layer, Guardrails, Knowledge Bases, and the surrounding AWS services.
+![Manifest architecture](docs/architecture.svg)
+
+The Orchestrator is deployed live to **Amazon Bedrock AgentCore Runtime** — not a diagram claim, verified: `agentcore status` shows `READY`, and `agentcore invoke` runs its real tools (FMCSA lookups, broker carrier records, rate statistics, playbook retrieval, a live Bedrock Guardrails check) in the cloud. See [agentcore-deploy/README.md](agentcore-deploy/README.md) for the deployment specifics and what's deliberately out of scope for this particular deployment (the browser-automation tools, which need the mock sites reachable — verified separately, running locally).
 
 ---
 
@@ -102,6 +104,7 @@ manifest/
 │       ├── playbook_rag/
 │       └── tools/
 ├── infra/            AWS CDK (TypeScript) — every AWS resource, stack by stack
+├── agentcore-deploy/  Bedrock AgentCore Runtime deployment (Orchestrator, live — see its README)
 ├── dashboard/         Next.js broker dashboard
 ├── mock-sites/
 │   ├── load-board/    Mock load board (DAT/Truckstop-style) — real login, search, and posting flows
@@ -166,17 +169,17 @@ npm run deploy   # deploys to the AWS account/region configured in your CLI
 
 ## 8. Build phases
 
-| Phase | Scope |
-|---|---|
-| 0 | Repo scaffolding, tooling, CDK skeleton, mock load-board/carrier-portal sites |
-| 1 | Load-Matching Agent working end to end against the mock load board |
-| 2 | Carrier Vetting & Fraud Detection Agent (FMCSA SAFER), Bedrock Guardrails |
-| 3 | Rate Intelligence, Carrier Outreach, Document Extraction, Voice Check-In |
-| 4 | Cargo Condition Agent (Nova Pro), Track-and-Trace, Customer Update |
-| 5 | Playbook & Lane-History Agent (Knowledge Bases), Orchestrator, AgentCore Memory |
-| 6 | Full swarm deployed to Bedrock AgentCore |
-| 7 | Broker dashboard — audit trail, approvals, analytics |
-| 8 | Polish, docs, architecture diagram, demo-readiness |
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Repo scaffolding, tooling, CDK skeleton, mock load-board/carrier-portal sites | done |
+| 1 | Load-Matching Agent working end to end against the mock load board | done |
+| 2 | Carrier Vetting & Fraud Detection Agent (FMCSA SAFER), Bedrock Guardrails | done |
+| 3 | Rate Intelligence, Carrier Outreach, Document Extraction, Voice Check-In | done |
+| 4 | Cargo Condition Agent (Nova Pro), Track-and-Trace, Customer Update | done |
+| 5 | Playbook & Lane-History Agent (Knowledge Bases), Orchestrator | done |
+| 6 | Orchestrator deployed to Bedrock AgentCore | done — see [agentcore-deploy/](agentcore-deploy/README.md); full-swarm deployment (every agent as its own runtime) and AgentCore Memory are the next increment |
+| 7 | Broker dashboard — audit trail, approvals, analytics | done — live at the link above; Cognito login not yet wired to the frontend |
+| 8 | Polish, docs, architecture diagram, demo-readiness | in progress |
 
 ---
 

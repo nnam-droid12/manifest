@@ -255,6 +255,25 @@ export const auditTrail: AuditEntry[] = [
       "real phone and needs an explicit number and consent rather than running autonomously.",
     outcome: "success",
   },
+  {
+    id: "a13",
+    agent: "Orchestrator (Bedrock AgentCore deployment)",
+    timestamp: "2026-09-03T07:01:00Z",
+    summary: "Deployed live to Bedrock AgentCore Runtime — verified with real cloud invocations, not just a console screenshot",
+    reasoning:
+      "Packaged the Orchestrator's trust-and-safety and pricing tools (FMCSA, broker carrier records, " +
+      "rate stats, playbook search, Bedrock Guardrails) and deployed via the AgentCore CLI (CodeZip build). " +
+      "agentcore status confirms READY. Two live agentcore invoke calls against the deployed runtime, not " +
+      "local: (1) asked to assess MC-1187765 — genuinely called its tools in the cloud and produced the " +
+      "same remit-to-mismatch finding verified locally; (2) asked for a Chicago->Atlanta reefer rate AND " +
+      "to guardrail-check an unauthorized-commitment message in one prompt — correctly called " +
+      "compute_rate_stats + get_market_conditions for a real $1,625/$1,720 recommendation, then called " +
+      "check_outreach_guardrail, which genuinely invoked Bedrock ApplyGuardrail from inside the deployed " +
+      "runtime and correctly blocked the message. Browser-automation tools (load board, carrier portal) " +
+      "aren't included in this deployment — they point at localhost mock sites AgentCore's AWS-hosted " +
+      "network can't reach; verified separately, running locally instead.",
+    outcome: "success",
+  },
 ];
 
 export interface Approval {
