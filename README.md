@@ -8,7 +8,7 @@ Built for the [Agents for Humans Hackathon](https://agentsforhumans.devpost.com/
 >
 > **Known blocker:** the deployment AWS account's Bedrock model-invocation quotas for Claude and Amazon Nova are currently held at 0 pending an AWS Support case (a below-default account-trust hold, not a config issue on our end). Reasoning agents run today against a temporary stand-in model via Bedrock Mantle; see [agents/README.md](agents/README.md) for the full explanation and the one-env-var swap back to real Claude/Nova once access clears.
 >
-> **Live dashboard:** https://d3aw7wk0rjfln6.cloudfront.net — deployed to S3 + CloudFront via CDK. Populated with a real, verified snapshot of this session's agent runs (see the Audit Trail tab); not yet wired to a live backend feed.
+> **Live dashboard:** https://d3aw7wk0rjfln6.cloudfront.net — deployed to S3 + CloudFront via CDK, with real Amazon Cognito login (client-side gated — a static-export SPA has no server to enforce it, standard for this hosting model). Demo login: `broker@manifest-demo.example` / `ManifestDemo2026!`. Verified end to end with an actual headless-browser run against the live site: unauthenticated visits redirect to `/login`, real Cognito sign-in succeeds, direct navigation to a protected route while logged out redirects back. Populated with a real, verified snapshot of this session's agent runs (see the Audit Trail tab); not yet wired to a live backend feed.
 
 ---
 
@@ -51,7 +51,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Customer Update Agent | Proactive shipper-facing status updates at milestones and real delays | working — verified drafting both a delay update (direct, no over-apologizing) and a delivered-milestone update (brief, positive) from real shipment data |
 | Playbook & Lane-History Agent | RAG over a Bedrock Knowledge Base of the broker's own historical loads and playbook notes | working (retrieval stand-in) — a real Bedrock Knowledge Base needs a working embedding model, which is blocked by the same account-wide quota gate (verified — Titan Embeddings fails identically to Claude/Nova). Standing in with deterministic keyword retrieval over the same source notes; verified both surfacing real precedent and honestly reporting "no precedent" rather than inventing one. Also wired into Carrier Vetting as a cross-agent integration — verified live pulling a carrier-specific blacklist note into a risk assessment |
 | Orchestrator Agent | Coordinates the swarm per active load; maintains state in AgentCore Memory; decides autonomous vs. human-review paths | working, **deployed live to Bedrock AgentCore Runtime** — chains Load-Matching → Carrier Vetting → [gate] → Rate Intelligence → Carrier Outreach locally; the gate is enforced in code, not left to a model's judgment. Verified live on two carriers — both correctly escalated to human review (one for real fraud red flags, one because the live FMCSA outage leaves even a clean long-standing carrier unverifiable). The AgentCore-hosted version (real FMCSA/rate/playbook/Guardrails tools) is `agentcore invoke`-able today — see [agentcore-deploy/README.md](agentcore-deploy/README.md). AgentCore Memory (persistent per-shipment state) is the next increment |
-| Broker Dashboard | The human-in-the-loop surface: active loads, audit trail, approvals queue, analytics | working — deployed at https://d3aw7wk0rjfln6.cloudfront.net; populated from a real captured snapshot of agent runs, not yet live-wired to a backend |
+| Broker Dashboard | The human-in-the-loop surface: active loads, audit trail, approvals queue, analytics | working — deployed at https://d3aw7wk0rjfln6.cloudfront.net with real Cognito login (verified via headless-browser test against the live site); populated from a real captured snapshot of agent runs, not yet live-wired to a backend |
 
 ---
 
@@ -178,7 +178,7 @@ npm run deploy   # deploys to the AWS account/region configured in your CLI
 | 4 | Cargo Condition Agent (Nova Pro), Track-and-Trace, Customer Update | done |
 | 5 | Playbook & Lane-History Agent (Knowledge Bases), Orchestrator | done |
 | 6 | Orchestrator deployed to Bedrock AgentCore | done — see [agentcore-deploy/](agentcore-deploy/README.md); full-swarm deployment (every agent as its own runtime) and AgentCore Memory are the next increment |
-| 7 | Broker dashboard — audit trail, approvals, analytics | done — live at the link above; Cognito login not yet wired to the frontend |
+| 7 | Broker dashboard — audit trail, approvals, analytics | done — live at the link above, with real Cognito login, verified via a real browser test against the live site |
 | 8 | Polish, docs, architecture diagram, demo-readiness | in progress |
 
 ---

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { getSession, logout } from "@/lib/auth";
 
 const NAV = [
   { href: "/", label: "Overview" },
@@ -12,6 +13,8 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const session = typeof window !== "undefined" ? getSession() : null;
 
   return (
     <aside className="w-60 shrink-0 bg-ink text-white flex flex-col min-h-screen">
@@ -35,8 +38,18 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="px-6 py-4 border-t border-white/10 text-xs text-white/40">
-        Demo data — see agents/README.md
+      <div className="px-6 py-4 border-t border-white/10">
+        {session && <div className="text-xs text-white/60 mb-2 truncate">{session.email}</div>}
+        <button
+          onClick={() => {
+            logout();
+            router.push("/login");
+          }}
+          className="text-xs text-white/50 hover:text-white transition-colors mb-2 block"
+        >
+          Sign out
+        </button>
+        <div className="text-xs text-white/30">Demo data — see agents/README.md</div>
       </div>
     </aside>
   );
