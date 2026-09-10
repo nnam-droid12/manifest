@@ -4,7 +4,7 @@
 
 Built for the [Agents for Humans Hackathon](https://agentsforhumans.devpost.com/) — Professional Agents track.
 
-> Status: in active development. This README tracks build progress phase by phase (see [Build phases](#build-phases)); sections marked `(planned)` describe work not yet landed.
+> Status: in active development. This README tracks build progress phase by phase (see [Build phases](#9-build-phases)); sections marked `(planned)` describe work not yet landed.
 >
 > **Known blocker:** the deployment AWS account's Bedrock model-invocation quotas for Claude and Amazon Nova are currently held at 0 pending an AWS Support case (a below-default account-trust hold, not a config issue on our end). Reasoning agents run today against a temporary stand-in model via Bedrock Mantle; see [agents/README.md](agents/README.md) for the full explanation and the one-env-var swap back to real Claude/Nova once access clears.
 >
@@ -85,7 +85,28 @@ The Orchestrator is deployed live to **Amazon Bedrock AgentCore Runtime** — no
 
 ---
 
-## 5. Repository layout
+## 5. Screenshots
+
+Live captures from the deployed dashboard (https://d3aw7wk0rjfln6.cloudfront.net) — not mockups.
+
+**Overview** — active loads, pending approvals, and top-line stats:
+![Dashboard overview](docs/screenshots/overview.png)
+
+**Audit Trail** — every agent action with its full reasoning, including the fraud-detection finding on MC-1187765 (Carrier Vetting Agent), the cargo-condition discrepancy (Cargo Condition Agent), and the AgentCore Memory recall proof (Orchestrator):
+![Audit trail](docs/screenshots/audit-trail.png)
+
+**Approvals** — the human-in-the-loop queue; nothing below reaches a carrier or customer until the broker acts on it:
+![Approvals queue](docs/screenshots/approvals.png)
+
+**Analytics** — fraud flags caught, margin by lane, on-time performance:
+![Analytics](docs/screenshots/analytics.png)
+
+**Login** — real Amazon Cognito authentication, not a mock:
+![Login](docs/screenshots/login.png)
+
+---
+
+## 6. Repository layout
 
 ```
 manifest/
@@ -119,7 +140,7 @@ Real load boards (DAT, Truckstop.com) and real carrier portals are proprietary, 
 
 ---
 
-## 6. Local development
+## 7. Local development
 
 ### Prerequisites
 
@@ -161,13 +182,13 @@ npm run deploy   # deploys to the AWS account/region configured in your CLI
 
 ---
 
-## 7. AWS deployment
+## 8. AWS deployment
 
 `(in progress)` — deployed to the AWS account behind `william.nnamani.uk@gmail.com`, `us-east-1`. See `infra/` for the full CDK app; each stack is documented at the top of its file with what it provisions and which build phase completes it.
 
 ---
 
-## 8. Build phases
+## 9. Build phases
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -183,7 +204,7 @@ npm run deploy   # deploys to the AWS account/region configured in your CLI
 
 ---
 
-## 9. Demo & submission links
+## 10. Demo & submission links
 
 - Demo video: `(add before submission)`
 - Live demo: `(add before submission)`
