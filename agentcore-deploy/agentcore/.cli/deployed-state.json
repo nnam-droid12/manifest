@@ -9,8 +9,14 @@
             "roleArn": "arn:aws:iam::507041536887:role/AgentCore-ManifestSwarm-d-ApplicationAgentManifestO-YuF8eTGimQZf"
           }
         },
+        "memories": {
+          "ManifestShipmentMemory": {
+            "memoryId": "ManifestSwarm_ManifestShipmentMemory-eoutBk9J2E",
+            "memoryArn": "arn:aws:bedrock-agentcore:us-east-1:507041536887:memory/ManifestSwarm_ManifestShipmentMemory-eoutBk9J2E"
+          }
+        },
         "stackName": "AgentCore-ManifestSwarm-default",
-        "deployHash": "66be417bc4b3f1ee"
+        "deployHash": "25a640976525ec97"
       }
     }
   }

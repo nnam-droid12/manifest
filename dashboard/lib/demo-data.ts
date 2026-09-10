@@ -274,6 +274,25 @@ export const auditTrail: AuditEntry[] = [
       "network can't reach; verified separately, running locally instead.",
     outcome: "success",
   },
+  {
+    id: "a14",
+    agent: "Orchestrator (AgentCore Memory)",
+    timestamp: "2026-09-10T23:20:00Z",
+    summary: "Per-load continuity verified across two independent cloud invocations — including a real bug found and fixed along the way",
+    reasoning:
+      "Wired a connected AgentCore Memory resource (SEMANTIC strategy, indexed on loadId) so a load's " +
+      "history persists across separate invocations, not just within one process. First deploy silently " +
+      "saved nothing: the save call sat after the SSE streaming loop, which never actually completes in " +
+      "production because the consumer stops pulling once it sees the terminal event (it worked locally " +
+      "only because curl fully drains the response). Fixed by saving inline at the terminal messageStop, " +
+      "before yielding it. Separately found agentcore invoke can't send custom payload fields at all — it " +
+      "always wraps its argument as a literal prompt string — so real verification used " +
+      "invoke-agent-runtime directly. Two independent calls for the same load_id then proved it: the " +
+      "second, prompted only to recap \"without re-checking anything,\" recalled the DOT number, remit-to " +
+      "details, and the exact playbook note verbatim, explicitly reasoning it should not call tools — the " +
+      "information came from AgentCore Memory itself, not any process-local state.",
+    outcome: "success",
+  },
 ];
 
 export interface Approval {

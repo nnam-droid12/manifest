@@ -16,6 +16,54 @@ running on localhost, which AgentCore's AWS-hosted runtime can't reach; see
 the repo-root README for how those are verified instead (run locally
 against the mock sites).
 
+## AgentCore Memory — real per-load continuity, with a real bug fixed along the way
+
+The Orchestrator also has a connected **AgentCore Memory** resource
+(`ManifestShipmentMemory`, `SEMANTIC` strategy, indexed on `loadId`) giving it
+continuity for a load across separate invocations — a HIGH-risk carrier
+finding from one call is still known on a completely different call later,
+even a fresh cold start, not just within one process's in-memory cache.
+
+**A payload passed with `load_id` on top of `prompt` gets that continuity.**
+`main.py` retrieves prior events for that `load_id` before the agent runs and
+saves the turn back to memory afterward — real `MemoryClient.list_events` /
+`create_event` calls, not a local cache.
+
+Getting this genuinely working, not just deployed, took two real fixes:
+
+1. **The first deploy silently didn't persist anything.** The save call sat
+   after the `async for event in agent.stream_async(...)` loop — which ran
+   fine against a local `curl` client (curl fully drains the response), but
+   in production the SSE consumer stops pulling from the generator once it
+   sees the conversation's terminal event, so the code after the loop never
+   executed. Fixed by saving inline, at the terminal `messageStop` event
+   (guarding against the intermediate `stopReason: "tool_use"` stops a
+   multi-tool-call turn produces), before yielding it — not after the loop.
+   The post-loop call is now a harmless fallback, not the primary path.
+
+2. **`agentcore invoke` can't actually send a custom payload.** Its `prompt`
+   argument (positional or `--prompt`) is always wrapped as the literal
+   string value of a `{"prompt": "..."}` payload — there's no flag for extra
+   top-level JSON fields like `load_id`. Every `agentcore invoke '{"prompt":
+   ..., "load_id": ...}'` call in earlier testing was actually sending that
+   whole JSON blob as one opaque prompt string (the model still produced a
+   sensible-looking answer by reading past it, which is what made this easy
+   to miss). Real testing against the deployed runtime instead uses
+   `aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn <arn>
+   --payload '{"prompt": "...", "load_id": "..."}' --cli-binary-format
+   raw-in-base64-out <outfile>`, which sends the payload as-given.
+
+**Verified live, after both fixes**, with two fully independent
+`invoke-agent-runtime` calls against the deployed runtime for the same
+`load_id`: the first assessed a carrier (MC-1042233) and got a real,
+tool-grounded finding (unverifiable FMCSA record, a playbook ban on reefer
+loads for this carrier). The second call — a completely separate invocation,
+prompted only with "what did we already find out... without re-checking
+anything" — recalled the DOT number, the remit-to details, and the playbook
+note **verbatim**, explicitly reasoning "Should not call tools. Just recap,"
+and never called a single tool. That's the proof: the information persisted
+in AgentCore Memory itself, not in any process-local state.
+
 This project was scaffolded with the [AgentCore CLI](https://github.com/aws/agentcore-cli) (`agentcore create --framework Strands`); the sections below are its own reference docs, kept as-is since they're accurate for anyone working with this project structure.
 
 ## Project Structure

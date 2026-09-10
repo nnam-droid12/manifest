@@ -2,8 +2,10 @@ from typing import Any
 from collections import OrderedDict
 from strands import Agent, tool
 import asyncio
+import os
 from strands.agent.conversation_manager.null_conversation_manager import NullConversationManager
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from bedrock_agentcore.memory import MemoryClient
 from model.load import load_model
 from tools.fmcsa import lookup_carrier_by_mc, lookup_carrier_by_dot
 from tools.carrier_records import get_broker_carrier_record
@@ -13,6 +15,16 @@ from tools.guardrails import check_outreach_guardrail
 
 app = BedrockAgentCoreApp()
 log = app.logger
+
+# AgentCore Memory — persistent continuity for a load across its lifecycle,
+# independent of the agent-instance cache below (which resets on cold start).
+# MEMORY_SHIPMENTMEMORY_ID is injected by the "shipmentMemory" connection in
+# agentcore.json (see wire-connections.js's MEMORY_<TOKEN>_ID convention).
+_MEMORY_ID = os.environ.get("MEMORY_SHIPMENTMEMORY_ID")
+_MEMORY_ACTOR_ID = "manifest-broker"
+_memory_client = MemoryClient(region_name=os.environ.get("AWS_REGION", "us-east-1")) if _MEMORY_ID else None
+if not _MEMORY_ID:
+    log.warning("MEMORY_SHIPMENTMEMORY_ID not set — running without per-load memory continuity.")
 
 DEFAULT_SYSTEM_PROMPT = """\
 You are the Manifest Orchestrator, hosted on Amazon Bedrock AgentCore — the
@@ -109,6 +121,64 @@ def strip_trailing_tool_use(messages: Any) -> list[dict]:
     return messages
 
 
+def _extract_load_id(payload: dict) -> str | None:
+    """Optional load_id in the payload keys this invocation into AgentCore Memory
+    as its session_id, giving the Orchestrator continuity across separate
+    invocations for the same load (a HIGH-risk carrier vetting today should
+    still be known tomorrow, even on a fresh cold-started instance)."""
+    if isinstance(payload, dict):
+        load_id = payload.get("load_id")
+        if isinstance(load_id, str) and load_id.strip():
+            return load_id.strip()
+    return None
+
+
+def _load_prior_context(load_id: str) -> str:
+    """Real prior events for this load, from AgentCore Memory — not the
+    in-process agent cache, which is lost on cold start. Best-effort: memory
+    being unreachable degrades to "no known history" rather than failing the
+    whole invocation."""
+    if not (_memory_client and _MEMORY_ID):
+        return ""
+    try:
+        turns = _memory_client.list_events(
+            memory_id=_MEMORY_ID, actor_id=_MEMORY_ACTOR_ID, session_id=load_id, max_results=10
+        )
+    except Exception as e:
+        log.warning(f"AgentCore Memory read failed for load {load_id}: {e}")
+        return ""
+    if not turns:
+        return ""
+    lines = []
+    for event in turns:
+        for message in event.get("payload", []):
+            conv = message.get("conversational", {})
+            role = conv.get("role", "")
+            text = conv.get("content", {}).get("text", "")
+            if role and text:
+                lines.append(f"[{role}] {text}")
+    if not lines:
+        return ""
+    return (
+        "Known history for this load, from AgentCore Memory (prior invocations, possibly a "
+        "different process/cold start):\n" + "\n".join(lines) + "\n\n---\n\n"
+    )
+
+
+def _save_turn(load_id: str, prompt_text: str, response_text: str) -> None:
+    if not (_memory_client and _MEMORY_ID):
+        return
+    try:
+        _memory_client.create_event(
+            memory_id=_MEMORY_ID,
+            actor_id=_MEMORY_ACTOR_ID,
+            session_id=load_id,
+            messages=[(prompt_text, "USER"), (response_text, "ASSISTANT")],
+        )
+    except Exception as e:
+        log.warning(f"AgentCore Memory write failed for load {load_id}: {e}")
+
+
 def _extract_prompt(payload: dict):
     """Accept validated harness messages, tool results, or a plain prompt string."""
     if not isinstance(payload, dict):
@@ -165,17 +235,50 @@ async def invoke(payload, context):
     agent = get_or_create_agent(session_id)
 
     prompt = _extract_prompt(payload)
+    load_id = _extract_load_id(payload)
 
+    # AgentCore Memory continuity: only meaningful for plain-string prompts —
+    # a caller-supplied message-history payload already carries its own context.
+    effective_prompt = prompt
+    if load_id and isinstance(prompt, str):
+        prior_context = _load_prior_context(load_id)
+        if prior_context:
+            effective_prompt = prior_context + prompt
+
+    response_text_parts: list[str] = []
 
     async for event in agent.stream_async(
-        prompt,
+        effective_prompt,
     ):
         if not isinstance(event, dict) or "event" not in event:
             continue
         cbs = event["event"].get("contentBlockStart")
         if cbs is not None and not cbs.get("start"):
             continue
+        delta = event["event"].get("contentBlockDelta", {}).get("delta", {})
+        if "text" in delta:
+            response_text_parts.append(delta["text"])
+
+        # Save inline, before yielding the terminal event — not after the loop.
+        # A live deployment found the SSE consumer stops pulling from this
+        # generator once it sees the conversation's final event, so anything
+        # placed after `async for` completes is unreachable in production even
+        # though it runs fine against a curl client that fully drains the
+        # response. stopReason "tool_use" marks an intermediate round trip,
+        # not the end of the turn — only save on "end_turn" (or another
+        # terminal reason), and only once per invocation.
+        stop_reason = event["event"].get("messageStop", {}).get("stopReason")
+        if stop_reason and stop_reason != "tool_use" and load_id and isinstance(prompt, str):
+            _save_turn(load_id, prompt, "".join(response_text_parts))
+            load_id = None  # guard against saving twice if another terminal event follows
+
         yield event
+
+    # Fallback only — normally already saved inline above and load_id is None
+    # by now. Covers the rare case the loop runs to completion without a
+    # terminal messageStop ever firing.
+    if load_id and isinstance(prompt, str):
+        _save_turn(load_id, prompt, "".join(response_text_parts))
 
 
 if __name__ == "__main__":

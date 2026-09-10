@@ -15,17 +15,58 @@
       "entrypoint": "main.py",
       "codeLocation": "app/ManifestOrchestrator/",
       "runtimeVersion": "PYTHON_3_14",
+      "envVars": [
+        {
+          "name": "MANIFEST_MODEL_PROVIDER",
+          "value": "bedrock_mantle"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "MANIFEST_OUTREACH_GUARDRAIL_ID",
+          "value": "tg655iizlour"
+        }
+      ],
       "networkMode": "PUBLIC",
       "protocol": "HTTP",
-      "envVars": [
-        { "name": "MANIFEST_MODEL_PROVIDER", "value": "bedrock_mantle" },
-        { "name": "AWS_REGION", "value": "us-east-1" },
-        { "name": "MANIFEST_OUTREACH_GUARDRAIL_ID", "value": "tg655iizlour" }
+      "additionalPolicies": [
+        "guardrail-policy.json"
       ],
-      "additionalPolicies": ["guardrail-policy.json"]
+      "connections": [
+        {
+          "id": "shipmentMemory",
+          "to": {
+            "type": "memory",
+            "arn": "arn:aws:bedrock-agentcore:us-east-1:507041536887:memory/ManifestSwarm_ManifestShipmentMemory-eoutBk9J2E"
+          },
+          "access": "readwrite",
+          "description": "Per-shipment continuity across the load lifecycle"
+        }
+      ]
     }
   ],
-  "memories": [],
+  "memories": [
+    {
+      "name": "ManifestShipmentMemory",
+      "eventExpiryDuration": 90,
+      "strategies": [
+        {
+          "type": "SEMANTIC",
+          "namespaceTemplates": [
+            "/users/{actorId}/facts"
+          ]
+        }
+      ],
+      "indexedKeys": [
+        {
+          "key": "loadId",
+          "type": "STRING"
+        }
+      ]
+    }
+  ],
   "knowledgeBases": [],
   "credentials": [],
   "evaluators": [],
