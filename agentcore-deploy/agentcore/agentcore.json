@@ -32,7 +32,8 @@
       "networkMode": "PUBLIC",
       "protocol": "HTTP",
       "additionalPolicies": [
-        "guardrail-policy.json"
+        "guardrail-policy.json",
+        "invoke-vetting-agent-policy.json"
       ],
       "connections": [
         {
@@ -43,8 +44,32 @@
           },
           "access": "readwrite",
           "description": "Per-shipment continuity across the load lifecycle"
+        },
+        {
+          "id": "vettingRuntime",
+          "to": {
+            "type": "runtime",
+            "arn": "arn:aws:bedrock-agentcore:us-east-1:507041536887:runtime/ManifestSwarm_CarrierVettingAgent-Kl247v61N0",
+            "exec": true
+          },
+          "description": "Delegates carrier vetting to the standalone Carrier Vetting Agent runtime"
         }
       ]
+    },
+    {
+      "name": "CarrierVettingAgent",
+      "description": "Standalone Carrier Vetting & Fraud Detection Agent, invoked by the Orchestrator as a genuine cross-runtime call",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/CarrierVettingAgent/",
+      "runtimeVersion": "PYTHON_3_14",
+      "envVars": [
+        { "name": "MANIFEST_MODEL_PROVIDER", "value": "bedrock_mantle" },
+        { "name": "AWS_REGION", "value": "us-east-1" }
+      ],
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP",
+      "additionalPolicies": ["mantle-policy.json"]
     }
   ],
   "memories": [

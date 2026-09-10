@@ -3,6 +3,11 @@
     "default": {
       "resources": {
         "runtimes": {
+          "CarrierVettingAgent": {
+            "runtimeId": "ManifestSwarm_CarrierVettingAgent-Kl247v61N0",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:507041536887:runtime/ManifestSwarm_CarrierVettingAgent-Kl247v61N0",
+            "roleArn": "arn:aws:iam::507041536887:role/AgentCore-ManifestSwarm-d-ApplicationAgentCarrierVe-f7eozg4gqPsE"
+          },
           "ManifestOrchestrator": {
             "runtimeId": "ManifestSwarm_ManifestOrchestrator-T7BgTuBqy0",
             "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:507041536887:runtime/ManifestSwarm_ManifestOrchestrator-T7BgTuBqy0",
@@ -16,7 +21,7 @@
           }
         },
         "stackName": "AgentCore-ManifestSwarm-default",
-        "deployHash": "25a640976525ec97"
+        "deployHash": "64875864626fff89"
       }
     }
   }

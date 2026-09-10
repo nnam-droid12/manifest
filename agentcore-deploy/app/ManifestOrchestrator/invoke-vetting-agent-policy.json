@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeCarrierVettingAgentRuntime",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:InvokeAgentRuntime",
+      "Resource": [
+        "arn:aws:bedrock-agentcore:us-east-1:507041536887:runtime/ManifestSwarm_CarrierVettingAgent-Kl247v61N0",
+        "arn:aws:bedrock-agentcore:us-east-1:507041536887:runtime/ManifestSwarm_CarrierVettingAgent-Kl247v61N0/runtime-endpoint/*"
+      ]
+    }
+  ]
+}

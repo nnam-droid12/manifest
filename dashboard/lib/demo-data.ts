@@ -293,6 +293,25 @@ export const auditTrail: AuditEntry[] = [
       "information came from AgentCore Memory itself, not any process-local state.",
     outcome: "success",
   },
+  {
+    id: "a15",
+    agent: "Orchestrator (cross-runtime delegation)",
+    timestamp: "2026-09-11T00:40:00Z",
+    summary: "Second AgentCore Runtime deployed and genuine delegation proven — then a real, still-open Mantle reliability issue surfaced on retest",
+    reasoning:
+      "Deployed CarrierVettingAgent as its own standalone AgentCore Runtime and wired the Orchestrator " +
+      "to delegate to it via a real cross-runtime InvokeAgentRuntime call (with an explicit IAM policy, " +
+      "after discovering the built-in 'runtime' connection type's exec flag doesn't grant invocation on " +
+      "its own -- a real AccessDeniedException caught and fixed). Verified once, genuinely: asked whether " +
+      "to engage MC-1187765, the Orchestrator delegated to the standalone runtime and synthesized a " +
+      "coherent answer from its real findings (remit-to mismatch, HIGH risk, autonomous_ok: false). Later " +
+      "re-verification against the deployed runtime started failing consistently with the same error " +
+      "text as the account-wide Bedrock block -- but only for multi-turn tool-calling conversations; a " +
+      "single-turn call with no tools kept succeeding throughout. Two real fixes attempted (explicit " +
+      "client timeouts; AWS's own Mantle multi-turn compat workaround, restored from the AgentCore CLI's " +
+      "scaffold) -- neither resolved it. Left open and documented as such rather than claimed fixed.",
+    outcome: "warning",
+  },
 ];
 
 export interface Approval {

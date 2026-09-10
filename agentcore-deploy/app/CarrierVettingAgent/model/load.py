@@ -9,15 +9,11 @@ def load_model():
     provider = os.environ.get("MANIFEST_MODEL_PROVIDER", "bedrock")
 
     if provider == "bedrock_mantle":
-        # MantleCompatResponsesModel, not the plain OpenAIResponsesModel: found
-        # live that plain multi-turn calls (any conversation involving a tool
-        # result being fed back for a second completion) intermittently fail
-        # against Mantle's gpt-oss-* models with a generic
-        # "Error 002: Access to Bedrock models is not allowed for this
-        # account" — single-turn calls succeed every time, which is what
-        # narrowed it to the multi-turn path specifically. See model/
-        # mantle_compat.py's docstring for the actual cause (Mantle rejecting
-        # a content-array format real OpenAI accepts).
+        # See ManifestOrchestrator/model/load.py for why MantleCompatResponsesModel,
+        # not plain OpenAIResponsesModel: multi-turn calls (a tool result fed
+        # back for a second completion — this agent's normal flow, since it
+        # always calls at least two tools) intermittently failed with a
+        # generic Bedrock-access error against plain OpenAIResponsesModel.
         from model.mantle_compat import MantleCompatResponsesModel
 
         return MantleCompatResponsesModel(

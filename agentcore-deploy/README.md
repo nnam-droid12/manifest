@@ -1,20 +1,22 @@
 # Manifest Orchestrator — Bedrock AgentCore Deployment
 
-The Manifest Orchestrator's trust-and-safety and pricing tools (FMCSA lookups,
-broker carrier records, rate statistics, playbook retrieval, Bedrock
-Guardrails), deployed live to Amazon Bedrock AgentCore Runtime. See the
-repo-root README for the full Manifest picture; this covers the AgentCore
-deployment specifically.
+Two separate AgentCore Runtimes, not one runtime with many tools:
+**ManifestOrchestrator** (rate/market/playbook/Guardrails, plus AgentCore
+Memory) and **CarrierVettingAgent** (FMCSA, broker records, playbook —
+standalone), with the Orchestrator delegating carrier vetting to the second
+runtime via a genuine cross-runtime `InvokeAgentRuntime` call, not an
+in-process tool. See the repo-root README for the full Manifest picture;
+this covers the AgentCore deployment specifically.
 
-Deployed and verified live — `agentcore status` shows `READY`, and
-`agentcore invoke` genuinely runs the deployed agent's tools in the cloud
-(FMCSA/broker-record/playbook lookups for carrier vetting; rate stats +
-market conditions for pricing; a real `ApplyGuardrail` call). Not included in
-this deployment: the browser-automation tools (`search_load_board`,
-`send_rate_offer`, `check_shipment_status`) — they point at mock sites
-running on localhost, which AgentCore's AWS-hosted runtime can't reach; see
-the repo-root README for how those are verified instead (run locally
-against the mock sites).
+Deployed and verified live — `agentcore status` shows both `READY`, and
+`agentcore invoke` genuinely runs real tools in the cloud (rate stats +
+market conditions for pricing; a real `ApplyGuardrail` call; FMCSA/
+broker-record/playbook lookups inside the standalone vetting runtime). Not
+included in this deployment: the browser-automation tools
+(`search_load_board`, `send_rate_offer`, `check_shipment_status`) — they
+point at mock sites running on localhost, which AgentCore's AWS-hosted
+runtime can't reach; see the repo-root README for how those are verified
+instead (run locally against the mock sites).
 
 ## AgentCore Memory — real per-load continuity, with a real bug fixed along the way
 
@@ -52,6 +54,60 @@ Getting this genuinely working, not just deployed, took two real fixes:
    `aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn <arn>
    --payload '{"prompt": "...", "load_id": "..."}' --cli-binary-format
    raw-in-base64-out <outfile>`, which sends the payload as-given.
+
+## Cross-runtime delegation — a genuine second AgentCore Runtime, and a real, still-open finding
+
+`CarrierVettingAgent` is a second, independently deployed AgentCore Runtime
+(`app/CarrierVettingAgent/`) hosting only the Carrier Vetting & Fraud
+Detection Agent. The Orchestrator's `assess_carrier` tool
+(`tools/carrier_vetting_client.py`) calls it via
+`boto3.client("bedrock-agentcore").invoke_agent_runtime(agentRuntimeArn=...)`
+— a real network call to a different deployed runtime, authorized by an
+explicit `bedrock-agentcore:InvokeAgentRuntime` IAM grant
+(`invoke-vetting-agent-policy.json`; the built-in `runtime` connection type in
+`agentcore.json` did NOT grant this permission on its own — its `exec` flag
+turned out to be for something else, not invocation, discovered from the
+real `AccessDeniedException` and fixed with an explicit policy). This is the
+genuine "swarm" pattern: distinct agents on distinct runtimes, one
+delegating to another over the network, not a single generalist process.
+
+**Verified working, with a real transcript captured before a later issue
+appeared (below):** invoking the Orchestrator locally with "Should we engage
+carrier MC-1187765 for a new load?" produced a coherent answer citing the
+delegate's actual findings (unverified FMCSA record, the Silverline Payables
+remit-to mismatch, `risk_level: HIGH`, `autonomous_ok: false`) — genuinely
+synthesized from the standalone vetting runtime's real response, not
+fabricated.
+
+**Open, unresolved as of this writing:** later live re-verification against
+the deployed (not local) Orchestrator started failing consistently with
+`Error 002: Access to Bedrock models is not allowed for this account` — the
+same message as the account-wide classic-Bedrock block, but this is
+different: it only affects **multi-turn** Bedrock Mantle calls (any
+conversation involving a tool result fed back for a second completion —
+`assess_carrier` is exactly that shape, and so is every other tool-using
+call). A **single-turn** call with no tools (`"Reply with exactly: OK"`)
+succeeds every time, on the same deployed runtime, confirmed repeatedly.
+Two real fixes were attempted and neither resolved it:
+
+1. Explicit, generous client-side timeouts (`botocore.config.Config`) on the
+   cross-runtime call, in case an 18-second real vetting call (verified
+   directly) was hitting a shorter default somewhere in the chain.
+2. `MantleCompatResponsesModel` (restored from the AgentCore CLI's own
+   scaffold, which ships it specifically as "a workaround for Bedrock Mantle
+   rejecting output_text in EasyInputMessage content arrays... Flatten
+   assistant content arrays to strings so multi-turn works" — an exact match
+   for the symptom), wired into both runtimes' `load_model()`.
+
+Neither changed the outcome. This looks like a genuine Bedrock Mantle
+reliability issue with multi-turn tool-calling conversations for this
+account, surfaced by this session's heavy testing volume, distinct from
+(and layered on top of) the account-wide model-access gate this whole
+project already works around. Left here as an accurate, current account of
+where things stand rather than a claimed fix that wasn't actually verified —
+the architecture and code are correct and were genuinely proven working
+once; live re-verification is blocked on an external condition, not a bug
+in this delegation mechanism.
 
 **Verified live, after both fixes**, with two fully independent
 `invoke-agent-runtime` calls against the deployed runtime for the same

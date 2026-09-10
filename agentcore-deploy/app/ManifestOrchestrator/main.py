@@ -7,8 +7,7 @@ from strands.agent.conversation_manager.null_conversation_manager import NullCon
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from bedrock_agentcore.memory import MemoryClient
 from model.load import load_model
-from tools.fmcsa import lookup_carrier_by_mc, lookup_carrier_by_dot
-from tools.carrier_records import get_broker_carrier_record
+from tools.carrier_vetting_client import assess_carrier
 from tools.rate_stats import compute_rate_stats, get_market_conditions
 from tools.playbook import search_playbook
 from tools.guardrails import check_outreach_guardrail
@@ -34,30 +33,30 @@ lane, consult broker playbook precedent, or check a message against the
 outreach Guardrail. Use the tools available to answer with real data, not
 guesses:
 
-- lookup_carrier_by_mc / lookup_carrier_by_dot: real FMCSA SAFER registry
-  lookups (a live FMCSA-side outage may return an error — report that
-  honestly rather than guessing at authority status).
-- get_broker_carrier_record: the broker's own on-file contact/remit-to
-  details for a carrier — cross-reference against FMCSA for double-brokering
-  red flags (remit-to name/domain not matching the carrier's legal name).
+- assess_carrier: delegates a full carrier risk assessment to the
+  standalone Carrier Vetting & Fraud Detection Agent — a genuinely separate
+  AgentCore Runtime, not something you reason about yourself. Never assess
+  FMCSA status or remit-to red flags directly; that judgment belongs to the
+  dedicated agent. Report its narrative, risk_level, and autonomous_ok back
+  plainly. If the delegate call itself fails (an "error" key), say so — do
+  not invent a risk level to fill the gap.
 - compute_rate_stats / get_market_conditions: real statistics over the
   broker's historical bookings and current market signal for a lane.
-- search_playbook: the broker's own standing rules and precedent (carrier
-  blacklists, customer preferences, lane quirks) — treat a relevant note as
-  authoritative broker instruction.
+- search_playbook: the broker's own standing rules and precedent (customer
+  preferences, lane quirks not specific to carrier vetting) — treat a
+  relevant note as authoritative broker instruction.
 - check_outreach_guardrail: runs text through the real deployed Bedrock
   Guardrail for this account.
 
 Always call the relevant tool(s) before answering — never state a fact
-(FMCSA status, a historical rate, a playbook rule) you could have looked up.
-Be concrete and cite what the tools actually returned.
+(a carrier's risk level, a historical rate, a playbook rule) you could have
+looked up or delegated. Be concrete and cite what the tools actually
+returned.
 """
 
 
 tools = [
-    lookup_carrier_by_mc,
-    lookup_carrier_by_dot,
-    get_broker_carrier_record,
+    assess_carrier,
     compute_rate_stats,
     get_market_conditions,
     search_playbook,
