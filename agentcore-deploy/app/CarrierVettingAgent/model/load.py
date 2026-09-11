@@ -9,14 +9,14 @@ def load_model():
     provider = os.environ.get("MANIFEST_MODEL_PROVIDER", "bedrock")
 
     if provider == "bedrock_mantle":
-        # See ManifestOrchestrator/model/load.py for why MantleCompatResponsesModel,
-        # not plain OpenAIResponsesModel: multi-turn calls (a tool result fed
-        # back for a second completion — this agent's normal flow, since it
-        # always calls at least two tools) intermittently failed with a
-        # generic Bedrock-access error against plain OpenAIResponsesModel.
-        from model.mantle_compat import MantleCompatResponsesModel
+        # See ManifestOrchestrator/model/load.py for the full story: Chat
+        # Completions kept as the more robust default (mirrors a confirmed
+        # fix for the vision model elsewhere in this project), but the actual
+        # issue that prompted investigating this turned out to be Mantle
+        # going fully unavailable for the account, not an API-path bug.
+        from strands.models.openai import OpenAIModel
 
-        return MantleCompatResponsesModel(
+        return OpenAIModel(
             bedrock_mantle_config={"region": os.environ.get("AWS_REGION", "us-east-1")},
             model_id=os.environ.get("MANIFEST_MANTLE_STANDIN_MODEL_ID", "openai.gpt-oss-120b"),
         )

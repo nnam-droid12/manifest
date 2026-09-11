@@ -9,18 +9,21 @@ def load_model():
     provider = os.environ.get("MANIFEST_MODEL_PROVIDER", "bedrock")
 
     if provider == "bedrock_mantle":
-        # MantleCompatResponsesModel, not the plain OpenAIResponsesModel: found
-        # live that plain multi-turn calls (any conversation involving a tool
-        # result being fed back for a second completion) intermittently fail
-        # against Mantle's gpt-oss-* models with a generic
-        # "Error 002: Access to Bedrock models is not allowed for this
-        # account" — single-turn calls succeed every time, which is what
-        # narrowed it to the multi-turn path specifically. See model/
-        # mantle_compat.py's docstring for the actual cause (Mantle rejecting
-        # a content-array format real OpenAI accepts).
-        from model.mantle_compat import MantleCompatResponsesModel
+        # strands.models.openai.OpenAIModel (Chat Completions, /v1/chat/completions),
+        # not OpenAIResponsesModel (/v1/responses) — mirrors an earlier, confirmed
+        # fix for the vision model in the main agents/ package, where Mantle's
+        # Responses endpoint rejected image content and Chat Completions fixed
+        # it outright. Kept here as the more robust default even though it did
+        # NOT fix the specific issue that prompted trying it: what looked at
+        # first like a multi-turn-only failure turned out, on further testing,
+        # to be Mantle going fully unavailable for this account — single-turn
+        # calls that had reliably worked all session started failing too,
+        # identically, regardless of API path. See agentcore-deploy/README.md
+        # for the full investigation; this is an account-side condition to
+        # wait out (or escalate), not something fixable in this code.
+        from strands.models.openai import OpenAIModel
 
-        return MantleCompatResponsesModel(
+        return OpenAIModel(
             bedrock_mantle_config={"region": os.environ.get("AWS_REGION", "us-east-1")},
             model_id=os.environ.get("MANIFEST_MANTLE_STANDIN_MODEL_ID", "openai.gpt-oss-120b"),
         )

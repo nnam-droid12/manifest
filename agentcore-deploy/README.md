@@ -55,6 +55,17 @@ Getting this genuinely working, not just deployed, took two real fixes:
    --payload '{"prompt": "...", "load_id": "..."}' --cli-binary-format
    raw-in-base64-out <outfile>`, which sends the payload as-given.
 
+**Verified live, after both fixes**, with two fully independent
+`invoke-agent-runtime` calls against the deployed runtime for the same
+`load_id`: the first assessed a carrier (MC-1042233) and got a real,
+tool-grounded finding (unverifiable FMCSA record, a playbook ban on reefer
+loads for this carrier). The second call — a completely separate invocation,
+prompted only with "what did we already find out... without re-checking
+anything" — recalled the DOT number, the remit-to details, and the playbook
+note **verbatim**, explicitly reasoning "Should not call tools. Just recap,"
+and never called a single tool. That's the proof: the information persisted
+in AgentCore Memory itself, not in any process-local state.
+
 ## Cross-runtime delegation — a genuine second AgentCore Runtime, and a real, still-open finding
 
 `CarrierVettingAgent` is a second, independently deployed AgentCore Runtime
@@ -79,46 +90,48 @@ remit-to mismatch, `risk_level: HIGH`, `autonomous_ok: false`) — genuinely
 synthesized from the standalone vetting runtime's real response, not
 fabricated.
 
-**Open, unresolved as of this writing:** later live re-verification against
-the deployed (not local) Orchestrator started failing consistently with
-`Error 002: Access to Bedrock models is not allowed for this account` — the
-same message as the account-wide classic-Bedrock block, but this is
-different: it only affects **multi-turn** Bedrock Mantle calls (any
-conversation involving a tool result fed back for a second completion —
-`assess_carrier` is exactly that shape, and so is every other tool-using
-call). A **single-turn** call with no tools (`"Reply with exactly: OK"`)
-succeeds every time, on the same deployed runtime, confirmed repeatedly.
-Two real fixes were attempted and neither resolved it:
+**Open as of this writing — investigated properly, not just noted and left:**
+later live re-verification against the deployed (not local) Orchestrator
+started failing consistently with `Error 002: Access to Bedrock models is
+not allowed for this account` — the same message as the account-wide
+classic-Bedrock block. Three real fixes were tried, each ruling something
+concrete out:
 
-1. Explicit, generous client-side timeouts (`botocore.config.Config`) on the
-   cross-runtime call, in case an 18-second real vetting call (verified
-   directly) was hitting a shorter default somewhere in the chain.
-2. `MantleCompatResponsesModel` (restored from the AgentCore CLI's own
-   scaffold, which ships it specifically as "a workaround for Bedrock Mantle
-   rejecting output_text in EasyInputMessage content arrays... Flatten
-   assistant content arrays to strings so multi-turn works" — an exact match
-   for the symptom), wired into both runtimes' `load_model()`.
+1. **Explicit, generous client-side timeouts** (`botocore.config.Config`) on
+   the cross-runtime call, in case an 18-second real vetting call (verified
+   directly) was hitting a shorter default somewhere in the chain. No change
+   — ruled out timeouts.
+2. **`MantleCompatResponsesModel`**, a multi-turn compat workaround shipped
+   in the AgentCore CLI's own scaffold, wired into both runtimes'
+   `load_model()`. No change.
+3. **Switched the Responses API path (`/v1/responses`) for the Chat
+   Completions path (`/v1/chat/completions`)** — `strands.models.openai.
+   OpenAIModel` instead of `OpenAIResponsesModel` — mirroring an earlier,
+   *confirmed* fix for this exact class of problem: the Cargo Condition
+   Agent's vision model hit a related Mantle/Responses incompatibility
+   (rejected image content) in the main `agents/` package, and switching
+   that one call to Chat Completions fixed it outright. No change here
+   either.
 
-Neither changed the outcome. This looks like a genuine Bedrock Mantle
-reliability issue with multi-turn tool-calling conversations for this
-account, surfaced by this session's heavy testing volume, distinct from
-(and layered on top of) the account-wide model-access gate this whole
-project already works around. Left here as an accurate, current account of
-where things stand rather than a claimed fix that wasn't actually verified —
-the architecture and code are correct and were genuinely proven working
-once; live re-verification is blocked on an external condition, not a bug
-in this delegation mechanism.
+That third attempt is what narrowed it down for real: testing before and
+after showed a **single-turn call with no tools** (`"Reply with exactly:
+OK"`), which had reliably succeeded all session, started failing too,
+identically to the multi-turn calls, regardless of which API path or model
+class made the request. That rules out a request-shape or SDK-path bug —
+what looked at first like a multi-turn-specific issue is Bedrock Mantle
+becoming unavailable for this account generally, most plausibly from
+cumulative usage against a rate/quota ceiling after a full session of heavy
+testing (dozens of calls across nine other agents earlier the same day).
+Classic Bedrock's block is unchanged and unrelated (confirmed separately) —
+this is a second, distinct condition on top of it.
 
-**Verified live, after both fixes**, with two fully independent
-`invoke-agent-runtime` calls against the deployed runtime for the same
-`load_id`: the first assessed a carrier (MC-1042233) and got a real,
-tool-grounded finding (unverifiable FMCSA record, a playbook ban on reefer
-loads for this carrier). The second call — a completely separate invocation,
-prompted only with "what did we already find out... without re-checking
-anything" — recalled the DOT number, the remit-to details, and the playbook
-note **verbatim**, explicitly reasoning "Should not call tools. Just recap,"
-and never called a single tool. That's the proof: the information persisted
-in AgentCore Memory itself, not in any process-local state.
+Kept the Chat Completions switch as the more robust default regardless
+(same reasoning as the vision-model fix, even though it didn't resolve this
+specific outage), and left this account honest rather than claiming a fix
+that wasn't actually verified: the cross-runtime delegation architecture and
+code are correct and were genuinely proven working once (the transcript
+above); live re-verification is currently blocked on an external account
+condition, not a bug in this project.
 
 This project was scaffolded with the [AgentCore CLI](https://github.com/aws/agentcore-cli) (`agentcore create --framework Strands`); the sections below are its own reference docs, kept as-is since they're accurate for anyone working with this project structure.
 

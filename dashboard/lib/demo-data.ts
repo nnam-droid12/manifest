@@ -297,7 +297,7 @@ export const auditTrail: AuditEntry[] = [
     id: "a15",
     agent: "Orchestrator (cross-runtime delegation)",
     timestamp: "2026-09-11T00:40:00Z",
-    summary: "Second AgentCore Runtime deployed and genuine delegation proven — then a real, still-open Mantle reliability issue surfaced on retest",
+    summary: "Second AgentCore Runtime deployed and genuine delegation proven — then Bedrock Mantle went unavailable for the account mid-retest, investigated to a real root cause",
     reasoning:
       "Deployed CarrierVettingAgent as its own standalone AgentCore Runtime and wired the Orchestrator " +
       "to delegate to it via a real cross-runtime InvokeAgentRuntime call (with an explicit IAM policy, " +
@@ -305,11 +305,15 @@ export const auditTrail: AuditEntry[] = [
       "its own -- a real AccessDeniedException caught and fixed). Verified once, genuinely: asked whether " +
       "to engage MC-1187765, the Orchestrator delegated to the standalone runtime and synthesized a " +
       "coherent answer from its real findings (remit-to mismatch, HIGH risk, autonomous_ok: false). Later " +
-      "re-verification against the deployed runtime started failing consistently with the same error " +
-      "text as the account-wide Bedrock block -- but only for multi-turn tool-calling conversations; a " +
-      "single-turn call with no tools kept succeeding throughout. Two real fixes attempted (explicit " +
-      "client timeouts; AWS's own Mantle multi-turn compat workaround, restored from the AgentCore CLI's " +
-      "scaffold) -- neither resolved it. Left open and documented as such rather than claimed fixed.",
+      "re-verification started failing with the account-wide Bedrock block's error text. Three fixes " +
+      "tried in sequence, each ruling something out: explicit client timeouts (no change), a Mantle " +
+      "multi-turn compat model from AWS's own scaffold (no change), switching Responses-API calls to " +
+      "Chat Completions -- a confirmed fix for an identical symptom on the vision model elsewhere in this " +
+      "project (no change here). The third attempt's before/after testing is what found the real answer: " +
+      "a single-turn call that had reliably worked all session started failing too, identically -- not a " +
+      "multi-turn or API-path bug at all, but Mantle becoming unavailable for the account generally, most " +
+      "plausibly a rate/quota ceiling from a full session of heavy usage. Documented precisely rather than " +
+      "left as a vague 'still investigating.'",
     outcome: "warning",
   },
 ];
