@@ -67,6 +67,7 @@ export interface AuditEntry {
   summary: string;
   reasoning: string;
   outcome: "info" | "success" | "warning" | "danger";
+  tools?: string[];
 }
 
 export const auditTrail: AuditEntry[] = [
@@ -82,6 +83,7 @@ export const auditTrail: AuditEntry[] = [
       "— below floor. Load 1002 ($1,504 posted, Reefer) and Load 1003 ($1,718, Flatbed) recommended " +
       "— both clear the floor with good timing alignment.",
     outcome: "success",
+    tools: ["search_load_board", "get_load_detail"],
   },
   {
     id: "a2",
@@ -96,6 +98,7 @@ export const auditTrail: AuditEntry[] = [
       "derivative of it. Classic double-brokering signature: payment being redirected to a third party. " +
       "Combined with zero verification and zero prior relationship, this clears the bar for HIGH risk.",
     outcome: "danger",
+    tools: ["lookup_carrier_by_mc", "get_broker_carrier_record"],
   },
   {
     id: "a3",
@@ -110,6 +113,7 @@ export const auditTrail: AuditEntry[] = [
       "pushed the target above the historical median rather than anchoring on it, while keeping the " +
       "ceiling within ~$10 of the historical high.",
     outcome: "info",
+    tools: ["compute_rate_stats", "get_market_conditions"],
   },
   {
     id: "a4",
@@ -123,6 +127,7 @@ export const auditTrail: AuditEntry[] = [
       "(not just via prompt instruction) — an offer above $1,680 would have been refused before " +
       "reaching the carrier regardless of the model's output.",
     outcome: "success",
+    tools: ["get_load_detail", "send_rate_offer"],
   },
   {
     id: "a5",
@@ -137,6 +142,7 @@ export const auditTrail: AuditEntry[] = [
       "presumably agreed — flagged as a discrepancy requiring broker review before signing or paying, " +
       "regardless of how small the gap.",
     outcome: "warning",
+    tools: ["extract_document_fields"],
   },
   {
     id: "a6",
@@ -152,6 +158,7 @@ export const auditTrail: AuditEntry[] = [
       "(2026-09-03) is 2 days late, and the agent correctly flagged \"escalate: ETA is past the promised " +
       "delivery date\" — confirming it reasons about significance rather than just running a fixed rule.",
     outcome: "info",
+    tools: ["check_shipment_status"],
   },
   {
     id: "a7",
@@ -167,6 +174,7 @@ export const auditTrail: AuditEntry[] = [
       "\"delivered\" milestone on a different shipment produced a deliberately shorter, purely positive " +
       "message — confirming tone actually adapts to the trigger rather than using one template for both.",
     outcome: "success",
+    tools: ["check_shipment_status"],
   },
   {
     id: "a8",
@@ -184,6 +192,7 @@ export const auditTrail: AuditEntry[] = [
       "are synthetic test images (Pillow-drawn, not real freight photos) generated for this verification; " +
       "same tool signature works unchanged against real photos.",
     outcome: "warning",
+    tools: ["compare_cargo_photos"],
   },
   {
     id: "a9",
@@ -202,6 +211,7 @@ export const auditTrail: AuditEntry[] = [
       "mechanics are separately proven working (see the Carrier Outreach entry above, which did place " +
       "a real offer on a run where vetting was bypassed for that isolated test).",
     outcome: "info",
+    tools: ["find_matches", "vet_carrier", "recommend_rate", "make_offer"],
   },
   {
     id: "a10",
@@ -219,6 +229,7 @@ export const auditTrail: AuditEntry[] = [
       "that arithmetic. This confirms, rather than undermines, why send_rate_offer's deterministic check " +
       "is the real enforcement and the guardrail stays a secondary layer.",
     outcome: "info",
+    tools: ["ApplyGuardrail"],
   },
   {
     id: "a11",
@@ -236,6 +247,7 @@ export const auditTrail: AuditEntry[] = [
       "as authoritative. Building this also caught and fixed a real parsing bug: multi-line markdown " +
       "bullets were getting silently truncated at the first line break.",
     outcome: "success",
+    tools: ["search_playbook"],
   },
   {
     id: "a12",
@@ -254,6 +266,7 @@ export const auditTrail: AuditEntry[] = [
       "deliberately not exercised: dialing an actual phone number via Amazon Connect, which rings a " +
       "real phone and needs an explicit number and consent rather than running autonomously.",
     outcome: "success",
+    tools: ["synthesize_speech", "transcribe_audio"],
   },
   {
     id: "a13",
@@ -273,6 +286,7 @@ export const auditTrail: AuditEntry[] = [
       "aren't included in this deployment — they point at localhost mock sites AgentCore's AWS-hosted " +
       "network can't reach; verified separately, running locally instead.",
     outcome: "success",
+    tools: ["assess_carrier", "compute_rate_stats", "get_market_conditions", "check_outreach_guardrail"],
   },
   {
     id: "a14",
@@ -292,6 +306,7 @@ export const auditTrail: AuditEntry[] = [
       "details, and the exact playbook note verbatim, explicitly reasoning it should not call tools — the " +
       "information came from AgentCore Memory itself, not any process-local state.",
     outcome: "success",
+    tools: ["MemoryClient.list_events", "MemoryClient.create_event"],
   },
   {
     id: "a15",
@@ -315,6 +330,7 @@ export const auditTrail: AuditEntry[] = [
       "plausibly a rate/quota ceiling from a full session of heavy usage. Documented precisely rather than " +
       "left as a vague 'still investigating.'",
     outcome: "warning",
+    tools: ["invoke_agent_runtime"],
   },
 ];
 
@@ -325,6 +341,7 @@ export interface Approval {
   risk: RiskLevel;
   relatedLoadId?: string;
   agent: string;
+  sourceEntryId?: string;
 }
 
 export const approvals: Approval[] = [
@@ -336,6 +353,7 @@ export const approvals: Approval[] = [
       "unavailable; first-time contact. Outreach is blocked pending your review.",
     risk: "HIGH",
     agent: "Carrier Vetting & Fraud Detection Agent",
+    sourceEntryId: "a2",
   },
   {
     id: "ap2",
@@ -346,6 +364,7 @@ export const approvals: Approval[] = [
     risk: "MEDIUM",
     relatedLoadId: "1002",
     agent: "Document Extraction Agent",
+    sourceEntryId: "a5",
   },
 ];
 

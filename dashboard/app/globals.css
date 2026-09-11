@@ -10,3 +10,57 @@ body {
   background: #f4f5f7;
   color: #0f172a;
 }
+
+@keyframes swarm-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(11, 46, 79, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(11, 46, 79, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(11, 46, 79, 0);
+  }
+}
+.swarm-pulse {
+  animation: swarm-pulse-ring 2.6s ease-out infinite;
+}
+
+@keyframes swarm-pulse-ring-soft {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(99, 102, 241, 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.35));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(99, 102, 241, 0.35));
+  }
+}
+.swarm-pulse-soft {
+  animation: swarm-pulse-ring-soft 3.2s ease-in-out infinite;
+}
+
+@keyframes swarm-dash-flow {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+.swarm-dash {
+  animation: swarm-dash-flow 1.2s linear infinite;
+}
+
+@keyframes timeline-reveal-kf {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.timeline-reveal {
+  opacity: 0;
+  animation: timeline-reveal-kf 0.5s ease-out forwards;
+}

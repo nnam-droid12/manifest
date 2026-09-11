@@ -1,4 +1,4 @@
-import { loads, stats, approvals } from "@/lib/demo-data";
+import { loads, stats, approvals, auditTrail } from "@/lib/demo-data";
 import { Card, StatCard, Badge, PageHeader } from "@/components/ui";
 import Link from "next/link";
 
@@ -8,6 +8,19 @@ const STATUS_TONE: Record<string, string> = {
   "Awaiting Review": "warning",
   Booked: "success",
 };
+
+const OUTCOME_DOT: Record<string, string> = {
+  info: "#94a3b8",
+  success: "#10b981",
+  warning: "#f59e0b",
+  danger: "#ef4444",
+};
+
+function initials(agent: string): string {
+  const clean = agent.replace(/\(.*?\)/g, "").trim();
+  const words = clean.split(/\s+/).filter((w) => w.length > 1 && w !== "&");
+  return words.slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
 
 export default function OverviewPage() {
   return (
@@ -44,6 +57,47 @@ export default function OverviewPage() {
           </div>
         </Card>
       )}
+
+      <Card className="mb-8">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Live Agent Activity
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">Most recent real agent runs across the swarm</p>
+          </div>
+          <Link href="/audit" className="text-xs font-medium text-ink hover:underline">
+            View full swarm & audit trail →
+          </Link>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          {auditTrail
+            .slice()
+            .reverse()
+            .slice(0, 5)
+            .map((entry) => (
+              <div key={entry.id} className="flex items-center gap-3">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                  style={{ backgroundColor: OUTCOME_DOT[entry.outcome] }}
+                >
+                  {initials(entry.agent)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-slate-800 truncate">
+                    <span className="font-medium">{entry.agent}</span>{" "}
+                    <span className="text-slate-500">— {entry.summary}</span>
+                  </div>
+                </div>
+                <Badge tone={entry.outcome}>{entry.outcome.toUpperCase()}</Badge>
+              </div>
+            ))}
+        </div>
+      </Card>
 
       <Card>
         <div className="px-5 py-4 border-b border-slate-100">

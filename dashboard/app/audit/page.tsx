@@ -1,45 +1,40 @@
-import { auditTrail } from "@/lib/demo-data";
-import { Card, Badge, PageHeader } from "@/components/ui";
+"use client";
+
+import { useState } from "react";
+import { PageHeader } from "@/components/ui";
+import SwarmMap from "@/components/SwarmMap";
+import Timeline from "@/components/Timeline";
 
 export default function AuditPage() {
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+
   return (
     <div>
       <PageHeader
         title="Audit Trail"
-        description="Every agent action, with its full reasoning — so you can see exactly why the system did what it did, not just that it did something."
+        description="Every agent action, with its full reasoning — so you can see exactly why the system did what it did, not just that it did something. Click a node in the swarm to filter."
       />
 
-      <div className="space-y-4">
-        {auditTrail.map((entry) => (
-          <Card key={entry.id} className="px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-900">{entry.agent}</span>
-                  {entry.loadId && (
-                    <span className="text-xs text-slate-400">Load {entry.loadId}</span>
-                  )}
-                </div>
-                <div className="text-sm text-slate-700 mt-1">{entry.summary}</div>
-              </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <Badge tone={entry.outcome}>{entry.outcome.toUpperCase()}</Badge>
-                <span className="text-xs text-slate-400">
-                  {new Date(entry.timestamp).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-slate-600 mt-3 leading-relaxed border-t border-slate-100 pt-3">
-              {entry.reasoning}
-            </p>
-          </Card>
-        ))}
+      <div className="mb-8">
+        <SwarmMap selectedAgent={selectedAgent} onSelectAgent={setSelectedAgent} />
       </div>
+
+      {selectedAgent && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-xs text-slate-500">Filtered to:</span>
+          <span className="text-xs font-medium bg-ink text-white px-2.5 py-1 rounded-full">
+            {selectedAgent === "__orchestrator__" ? "Orchestrator (all variants)" : selectedAgent}
+          </span>
+          <button
+            onClick={() => setSelectedAgent(null)}
+            className="text-xs text-slate-400 hover:text-slate-600 underline"
+          >
+            clear
+          </button>
+        </div>
+      )}
+
+      <Timeline filterAgent={selectedAgent} />
     </div>
   );
 }
