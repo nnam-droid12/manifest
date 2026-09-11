@@ -1,13 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
 from pydantic import BaseModel, Field
-from strands import Agent
+from strands import Agent, AgentSkills
 
+from manifest_agents.hooks import RateLimiterHookProvider
 from manifest_agents.models import get_reasoning_model
 from manifest_agents.tools.carrier_records import get_broker_carrier_record
 from manifest_agents.tools.fmcsa import lookup_carrier_by_dot, lookup_carrier_by_mc
 from manifest_agents.tools.playbook import search_playbook
+
+_SKILLS_DIR = Path(__file__).resolve().parents[3] / "skills"
 
 SYSTEM_PROMPT = """\
 You are the Carrier Vetting & Fraud Detection Agent for Manifest, an AI freight
@@ -20,49 +24,19 @@ any assessment — always both, regardless of what either one returns. A failed
 or erroring FMCSA lookup is not a reason to skip the broker-record check; if
 anything it makes that second check more important, not less:
 1. Call lookup_carrier_by_mc (or lookup_carrier_by_dot if only a DOT number is
-   given) to get the carrier's official FMCSA registration: operating authority
-   status, physical address, insurance-on-file, safety rating, and how long ago
-   authority was granted.
+   given) to get the carrier's official FMCSA registration.
 2. Call get_broker_carrier_record to get the broker's own on-file contact and
    remit-to (payment) details for this carrier.
+3. Call search_playbook with the carrier's name for any standing broker rule
+   about this specific carrier.
 
-Then:
-3. Cross-reference the two. Specifically check for:
-   - Remit-to name or email domain that does not match the carrier's legal name
-     or an obvious derivative of it — a classic double-brokering red flag
-     (payment being redirected to a third party).
-   - Operating authority granted very recently (a fraudulent operator will often
-     be operating under newly-issued or reactivated authority).
-   - No broker-side record on file at all (first-time contact) combined with
-     any other red flag above — treat that combination as elevated risk, since
-     there's no track record to fall back on.
-   - Authority status that isn't active, or insurance that appears to be
-     missing or minimal.
-   - A generic or non-corporate contact email domain (e.g. a public webmail
-     provider) for what claims to be an established carrier.
-
-If the FMCSA lookup tool returns an "error" (e.g. the API is unreachable or
-misconfigured), do not silently skip that check or guess at authority status —
-say plainly that FMCSA verification could not be completed, and factor that gap
-itself into the risk level: an unverifiable carrier is not the same as a
-verified-clean one, and should not be cleared for autonomous outreach.
-
-Also call search_playbook with the carrier's name (and equipment type/lane if
-you know them) — the broker may have already written down a standing rule
-about this exact carrier (a blacklist, a known equipment issue) that should
-override or reinforce whatever FMCSA and the broker record show. If it
-returns a relevant note, treat it as authoritative broker instruction, not
-just one more data point — e.g. a "never book for X" note means HIGH risk and
-no autonomy regardless of how clean everything else looks.
+Then load the fraud-investigation-checklist skill and work through it in full
+using the data you just gathered — it has the complete red-flag checklist and
+scoring rubric, and it is not optional just because a carrier looks clean at
+a glance.
 
 Do not just output a bare score. Produce a plain-language risk assessment: what
 you checked, exactly what you found, and why it does or doesn't concern you.
-State a risk level (LOW, MEDIUM, or HIGH) and, critically, whether the Carrier
-Outreach Agent should be allowed to proceed autonomously with this carrier or
-must get human sign-off first — HIGH risk always requires human sign-off,
-MEDIUM risk should note why a human might still want to glance at it even
-though it isn't blocking.
-
 Be concrete. "Something feels off" is not an assessment; "the remit-to email
 domain (silverlinepayables-invoices.com) does not match the carrier's legal
 name or registered domain" is.
@@ -102,6 +76,15 @@ def build_carrier_vetting_agent() -> Agent:
         model=get_reasoning_model(),
         system_prompt=SYSTEM_PROMPT,
         tools=[lookup_carrier_by_mc, lookup_carrier_by_dot, get_broker_carrier_record, search_playbook],
+        # Each of these should be called once per assessment; 2 allows a
+        # single retry without permitting a runaway loop against FMCSA's
+        # public, rate-limited API.
+        hooks=[RateLimiterHookProvider(max_calls_per_tool=2)],
+        # Progressive disclosure: only the skill's name+description sit in
+        # the system prompt by default; the full checklist (see
+        # skills/fraud-investigation-checklist/SKILL.md) loads into context
+        # only when the agent actually asks for it, not on every turn.
+        plugins=[AgentSkills(skills=_SKILLS_DIR / "fraud-investigation-checklist")],
     )
 
 

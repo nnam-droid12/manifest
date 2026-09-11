@@ -20,10 +20,33 @@ log = app.logger
 # MEMORY_SHIPMENTMEMORY_ID is injected by the "shipmentMemory" connection in
 # agentcore.json (see wire-connections.js's MEMORY_<TOKEN>_ID convention).
 _MEMORY_ID = os.environ.get("MEMORY_SHIPMENTMEMORY_ID")
-_MEMORY_ACTOR_ID = "manifest-broker"
+_DEFAULT_TENANT_ID = "demo-broker"
 _memory_client = MemoryClient(region_name=os.environ.get("AWS_REGION", "us-east-1")) if _MEMORY_ID else None
 if not _MEMORY_ID:
     log.warning("MEMORY_SHIPMENTMEMORY_ID not set — running without per-load memory continuity.")
+
+_TENANT_ID_PATTERN = __import__("re").compile(r"[^a-zA-Z0-9_-]")
+
+
+def _actor_id_for_tenant(tenant_id: str) -> str:
+    """Multi-tenant data isolation, not just a naming convention: the memory
+    resource's SEMANTIC strategy uses namespaceTemplates:
+    ["/users/{actorId}/facts"] (agentcore.json), so a distinct actor_id per
+    tenant gives each broker organization a genuinely separate memory
+    namespace at the AgentCore layer — one tenant's carrier findings are not
+    retrievable, even accidentally, from another tenant's session. Sanitized
+    because actor_id flows into that namespace path.
+    """
+    clean = _TENANT_ID_PATTERN.sub("", tenant_id.strip()) or _DEFAULT_TENANT_ID
+    return f"broker-{clean}"[:128]
+
+
+def _extract_tenant_id(payload: dict) -> str:
+    if isinstance(payload, dict):
+        tenant_id = payload.get("tenant_id")
+        if isinstance(tenant_id, str) and tenant_id.strip():
+            return tenant_id.strip()
+    return _DEFAULT_TENANT_ID
 
 DEFAULT_SYSTEM_PROMPT = """\
 You are the Manifest Orchestrator, hosted on Amazon Bedrock AgentCore — the
@@ -132,19 +155,21 @@ def _extract_load_id(payload: dict) -> str | None:
     return None
 
 
-def _load_prior_context(load_id: str) -> str:
+def _load_prior_context(load_id: str, actor_id: str) -> str:
     """Real prior events for this load, from AgentCore Memory — not the
     in-process agent cache, which is lost on cold start. Best-effort: memory
     being unreachable degrades to "no known history" rather than failing the
-    whole invocation."""
+    whole invocation. actor_id is tenant-scoped (see _actor_id_for_tenant) —
+    a load_id collision across two different broker orgs still cannot cross
+    into each other's memory, since actor_id is the tenant boundary here."""
     if not (_memory_client and _MEMORY_ID):
         return ""
     try:
         turns = _memory_client.list_events(
-            memory_id=_MEMORY_ID, actor_id=_MEMORY_ACTOR_ID, session_id=load_id, max_results=10
+            memory_id=_MEMORY_ID, actor_id=actor_id, session_id=load_id, max_results=10
         )
     except Exception as e:
-        log.warning(f"AgentCore Memory read failed for load {load_id}: {e}")
+        log.warning(f"AgentCore Memory read failed for load {load_id} (actor {actor_id}): {e}")
         return ""
     if not turns:
         return ""
@@ -164,18 +189,18 @@ def _load_prior_context(load_id: str) -> str:
     )
 
 
-def _save_turn(load_id: str, prompt_text: str, response_text: str) -> None:
+def _save_turn(load_id: str, actor_id: str, prompt_text: str, response_text: str) -> None:
     if not (_memory_client and _MEMORY_ID):
         return
     try:
         _memory_client.create_event(
             memory_id=_MEMORY_ID,
-            actor_id=_MEMORY_ACTOR_ID,
+            actor_id=actor_id,
             session_id=load_id,
             messages=[(prompt_text, "USER"), (response_text, "ASSISTANT")],
         )
     except Exception as e:
-        log.warning(f"AgentCore Memory write failed for load {load_id}: {e}")
+        log.warning(f"AgentCore Memory write failed for load {load_id} (actor {actor_id}): {e}")
 
 
 def _extract_prompt(payload: dict):
@@ -235,12 +260,13 @@ async def invoke(payload, context):
 
     prompt = _extract_prompt(payload)
     load_id = _extract_load_id(payload)
+    actor_id = _actor_id_for_tenant(_extract_tenant_id(payload))
 
     # AgentCore Memory continuity: only meaningful for plain-string prompts —
     # a caller-supplied message-history payload already carries its own context.
     effective_prompt = prompt
     if load_id and isinstance(prompt, str):
-        prior_context = _load_prior_context(load_id)
+        prior_context = _load_prior_context(load_id, actor_id)
         if prior_context:
             effective_prompt = prior_context + prompt
 
@@ -268,7 +294,7 @@ async def invoke(payload, context):
         # terminal reason), and only once per invocation.
         stop_reason = event["event"].get("messageStop", {}).get("stopReason")
         if stop_reason and stop_reason != "tool_use" and load_id and isinstance(prompt, str):
-            _save_turn(load_id, prompt, "".join(response_text_parts))
+            _save_turn(load_id, actor_id, prompt, "".join(response_text_parts))
             load_id = None  # guard against saving twice if another terminal event follows
 
         yield event
@@ -277,7 +303,7 @@ async def invoke(payload, context):
     # by now. Covers the rare case the loop runs to completion without a
     # terminal messageStop ever firing.
     if load_id and isinstance(prompt, str):
-        _save_turn(load_id, prompt, "".join(response_text_parts))
+        _save_turn(load_id, actor_id, prompt, "".join(response_text_parts))
 
 
 if __name__ == "__main__":

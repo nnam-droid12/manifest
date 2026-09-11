@@ -33,6 +33,7 @@ const ORCHESTRATOR_MATCH = [
   "Orchestrator (Bedrock AgentCore deployment)",
   "Orchestrator (AgentCore Memory)",
   "Orchestrator (cross-runtime delegation)",
+  "Orchestrator (multi-tenant AgentCore Memory)",
 ];
 
 function polarPoint(cx: number, cy: number, r: number, angleDeg: number) {

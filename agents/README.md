@@ -179,6 +179,73 @@ routine on-schedule check-in and a real breakdown. Both were summarized
 correctly, and the breakdown scenario was explicitly flagged as needing the
 broker's attention rather than folded into a neutral status update.
 
+## Governance: Strands Hooks, Steering, and Skills — architectural guarantees, not prompt hopes
+
+A system prompt saying "do X before Y" is a request the model can drift from
+under a long or confusing conversation. Everything below is the same rule
+enforced at the framework level instead — the agent structurally cannot skip
+it, verified by constructing the real Strands event types directly
+(`tests/test_hooks.py`, `tests/test_steering.py`, 15 tests) rather than
+trusting that the prompt wording alone will hold.
+
+**Hooks** (`manifest_agents/hooks.py`) plug into `BeforeToolCallEvent` /
+`AfterToolCallEvent` and can set `event.cancel_tool` to refuse a tool call
+before it ever runs, with a message the agent actually sees and can act on:
+
+- `RateLimiterHookProvider` — caps how many times each tool may run per
+  invocation (wired into Carrier Vetting, max 2 calls/tool: FMCSA is a real,
+  rate-limited public API a confused model shouldn't be free to loop-call).
+- `RequireCallFirstHookProvider` — blocks a consequential tool until a
+  prerequisite has actually succeeded in the same conversation (wired into
+  Carrier Outreach: `send_rate_offer` is refused until `get_load_detail` has
+  run — the prompt already said to do this in order; now it's true whether
+  or not the model remembers to).
+
+**Steering** (`manifest_agents/steering.py`) is a different question from a
+hook's yes/no check: it inspects the actual *content* of a proposed action
+and, when it's wrong, doesn't just block it — it tells the agent specifically
+what's wrong so it can redraft and retry in the same turn (approve / guide /
+reject, the same three outcomes a human supervisor gives on a colleague's
+draft). `SteeringHookProvider` wraps Carrier Outreach's `send_rate_offer`:
+`check_outreach_overreach` scans the drafted message for commitments beyond
+the linehaul rate itself — "guarantee," "future loads," "no limit,"
+"detention pay," "signed agreement" — that the system prompt already forbids
+but nothing previously enforced. A hit doesn't just cancel the call; the
+agent gets back exactly which phrase tripped it and is told to redraft
+without it.
+
+**Skills** (`agents/skills/`, real `strands.AgentSkills`/`Skill` — the
+official primitive, not a custom retrieval tool) give an agent detailed
+procedural knowledge on demand instead of stuffing it permanently into the
+system prompt: only the skill's name + description sit in context by
+default, and the full instructions load only when the agent actually asks
+for them (verified both skills parse correctly via Strands' own
+`Skill.from_file` and that `AgentSkills` initializes cleanly against their
+paths).
+
+- `fraud-investigation-checklist` (Carrier Vetting) — the detailed red-flag
+  checklist and risk-scoring rubric, moved out of the system prompt into a
+  skill (a genuine context-efficiency refactor, not just a relocation:
+  Carrier Vetting's system prompt shrank by more than half).
+- `counter-offer-handling` (Carrier Outreach) — real new capability, not a
+  refactor: a documented procedure for handling a carrier's counter-offer
+  (accept if within ceiling, escalate if not, never decide by feel), backed
+  by a new deterministic tool, `evaluate_counter_offer`, and a new entry
+  point, `negotiate_with_counter`, that exercises the full flow.
+
+**Multi-tenancy** lives in the AgentCore deployment, not this package — see
+[agentcore-deploy/README.md](../agentcore-deploy/README.md) for how a
+tenant-scoped `actor_id` gives each broker organization a genuinely separate
+AgentCore Memory namespace.
+
+Full live, model-in-the-loop verification of all three (hooks actually
+firing mid-conversation, steering actually causing a redraft, a skill
+actually getting loaded on demand) is pending Mantle recovery — see the
+Model provider section above. Everything here is verified at the level that
+doesn't require a live model call: the hook/steering logic against Strands'
+real event types, and the skills against Strands' real loader — not
+simulated, not assumed.
+
 ## Running things
 
 ```bash

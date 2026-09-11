@@ -332,6 +332,74 @@ export const auditTrail: AuditEntry[] = [
     outcome: "warning",
     tools: ["invoke_agent_runtime"],
   },
+  {
+    id: "a16",
+    agent: "Carrier Outreach Agent",
+    timestamp: "2026-09-11T14:10:00Z",
+    summary: "Wired real Strands Hooks and Steering — sequence enforcement and content redirection, verified against Strands' actual event types",
+    reasoning:
+      "Added two structural guarantees on top of send_rate_offer's existing ceiling check. " +
+      "RequireCallFirstHookProvider (a real Strands BeforeToolCallEvent/AfterToolCallEvent hook) refuses " +
+      "send_rate_offer until get_load_detail has actually succeeded in the same conversation -- the " +
+      "system prompt already said to check first, this makes it structurally true. SteeringHookProvider " +
+      "separately reviews the drafted message content and, if it overreaches beyond the linehaul rate " +
+      "(a guarantee, a promise of future loads, uncapped detention pay, 'signed agreement' language), " +
+      "cancels the call with specific feedback naming the exact phrase -- guide, not just block, so the " +
+      "agent can redraft in the same turn. Verified with 15 tests constructing Strands' real " +
+      "BeforeToolCallEvent/AfterToolCallEvent objects directly (not mocks) and confirming cancel_tool " +
+      "fires correctly in every case: allowed-under-limit, blocked-over-limit, blocked-before-prerequisite, " +
+      "allowed-after-prerequisite, each overreach phrase individually, and a clean offer passing through " +
+      "untouched. Live model-in-the-loop verification (an actual agent run redrafting after steering " +
+      "feedback) is pending Mantle recovery.",
+    outcome: "success",
+    tools: ["RequireCallFirstHookProvider", "SteeringHookProvider"],
+  },
+  {
+    id: "a17",
+    agent: "Carrier Vetting & Fraud Detection Agent",
+    timestamp: "2026-09-11T14:22:00Z",
+    summary: "Moved the fraud checklist into a real Strands Skill — system prompt shrank 54%, and added a genuine new negotiation capability via a second skill",
+    reasoning:
+      "fraud-investigation-checklist is a real Strands Skill (strands.AgentSkills / Skill.from_file, " +
+      "the official progressive-disclosure primitive, not a custom retrieval tool): only its name and " +
+      "description sit in the system prompt by default, and the full red-flag checklist and scoring " +
+      "rubric load into context only when the agent actually asks for it. Moving that checklist out of " +
+      "the permanent system prompt measured as a real 54% reduction (3,414 -> 1,572 characters), verified " +
+      "by diffing against the prior committed version, not estimated. Separately, counter-offer-handling " +
+      "is a second skill on Carrier Outreach that adds real new capability rather than refactoring " +
+      "existing text: a documented procedure for handling a carrier's counter-offer, backed by a new " +
+      "deterministic tool (evaluate_counter_offer -- accept if within ceiling, escalate if not, never a " +
+      "judgment call) and a new entry point (negotiate_with_counter) exercising the full flow. Both " +
+      "skills verified parsing correctly via Strands' own Skill.from_file loader and both AgentSkills " +
+      "plugin instances verified initializing cleanly against their paths -- checked without needing a " +
+      "live model call, since plugin/parser correctness doesn't depend on one.",
+    outcome: "success",
+    tools: ["AgentSkills", "evaluate_counter_offer"],
+  },
+  {
+    id: "a18",
+    agent: "Orchestrator (multi-tenant AgentCore Memory)",
+    timestamp: "2026-09-11T14:35:00Z",
+    summary: "Fixed a real gap: a single hardcoded memory actor_id meant every broker sharing this deployment shared memory -- now tenant-scoped",
+    reasoning:
+      "AgentCore Memory's SEMANTIC strategy already had the primitive this needed -- " +
+      "namespaceTemplates: ['/users/{actorId}/facts'] scopes every record under the caller's actorId -- " +
+      "but actor_id was a single hardcoded constant ('manifest-broker'), meaning every broker " +
+      "organization using this deployment would land in the same memory namespace. Fixed with " +
+      "_actor_id_for_tenant(tenant_id), deriving a sanitized, tenant-scoped actor_id " +
+      "(broker-<tenant_id>, defaulting to demo-broker) from an optional tenant_id field on the " +
+      "invocation payload, threaded through both the memory read and write paths. This is genuine " +
+      "isolation at the AgentCore layer, not an application-level filter a bug could bypass: two " +
+      "tenants reusing the same load_id (plausible -- load IDs aren't globally unique across " +
+      "brokerages) land in different namespaces and cannot retrieve each other's records. Verified " +
+      "directly against three inputs (a normal tenant id, one needing sanitization, and an empty " +
+      "string falling back to the safe default) -- pure request-handling logic, doesn't need a live " +
+      "model call to be correct. Scope stated honestly: this covers AgentCore Memory isolation " +
+      "specifically, not yet DynamoDB row-level tenant scoping or IAM-level boundaries via AgentCore " +
+      "Identity -- the natural next increment for a real multi-tenant deployment, not claimed here.",
+    outcome: "success",
+    tools: ["_actor_id_for_tenant", "MemoryClient.list_events", "MemoryClient.create_event"],
+  },
 ];
 
 export interface Approval {

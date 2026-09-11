@@ -50,3 +50,29 @@ def send_rate_offer(
         "offer_rate": offer_rate,
         "guardrail_checked": guardrail_result.get("checked", False),
     }
+
+
+@tool
+def evaluate_counter_offer(counter_rate: float, ceiling_rate: float) -> dict:
+    """Deterministically evaluate a carrier's counter-offer against the authorized ceiling.
+
+    The only source of truth for "is this counter acceptable" — see the
+    counter-offer-handling skill for the full procedure this feeds into.
+    Not a judgment call: a straight comparison, always computed the same way
+    regardless of how the model is inclined to read the numbers.
+
+    Args:
+        counter_rate: The rate the carrier countered with, in dollars.
+        ceiling_rate: The maximum rate this agent is authorized to offer for this load.
+
+    Returns:
+        {within_ceiling, action, margin_vs_ceiling} — action is one of
+        "accept" (send_rate_offer at counter_rate) or "escalate" (report to
+        the broker, do not send anything).
+    """
+    within_ceiling = counter_rate <= ceiling_rate
+    return {
+        "within_ceiling": within_ceiling,
+        "action": "accept" if within_ceiling else "escalate",
+        "margin_vs_ceiling": round(ceiling_rate - counter_rate, 2),
+    }

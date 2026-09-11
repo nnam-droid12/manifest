@@ -18,6 +18,44 @@ point at mock sites running on localhost, which AgentCore's AWS-hosted
 runtime can't reach; see the repo-root README for how those are verified
 instead (run locally against the mock sites).
 
+## Multi-tenancy — one deployment, isolated data per broker organization
+
+Manifest is meant to be a platform multiple brokerages use, not a private
+tool for one — and AgentCore Memory's `SEMANTIC` strategy already has the
+primitive this needs: `namespaceTemplates: ["/users/{actorId}/facts"]`
+(`agentcore/agentcore.json`) scopes every memory record under the caller's
+`actorId`. Before this, `actor_id` was a single hardcoded constant
+(`"manifest-broker"`) — meaning every broker using this deployment would
+have shared, un-isolated memory. Fixed in `main.py`:
+`_actor_id_for_tenant(tenant_id)` derives a sanitized, tenant-scoped
+`actor_id` (`broker-<tenant_id>`, defaulting to `demo-broker` if the caller
+doesn't pass one) from an optional `tenant_id` field on the invocation
+payload, threaded through both the memory read (`_load_prior_context`) and
+write (`_save_turn`) paths.
+
+This is genuine data isolation at the AgentCore layer, not an
+application-level filter that a bug could bypass: two tenants using the same
+`load_id` (entirely plausible — load IDs aren't globally unique across
+brokerages) land in different memory namespaces and cannot retrieve each
+other's records, even by accident, because the namespace boundary is
+`actorId`, computed before either tenant's session touches memory.
+
+Verified directly (no live model call needed — this is pure request
+handling, not agent reasoning):
+
+```python
+_actor_id_for_tenant("acme-freight")       # -> "broker-acme-freight"
+_actor_id_for_tenant("Harbor Logistics!!")  # -> "broker-HarborLogistics" (sanitized)
+_actor_id_for_tenant("")                    # -> "broker-demo-broker" (safe default)
+```
+
+**Scope, honestly stated:** this covers data isolation for AgentCore Memory,
+which is the concrete thing this deployment actually persists per-tenant
+today. It does not yet cover DynamoDB row-level tenant scoping (the tables
+in `infra/lib/data-stack.ts` don't currently partition by tenant) or
+IAM-level tenant boundaries via AgentCore Identity — both are the natural
+next increment for a real multi-tenant SaaS deployment, not implemented here.
+
 ## AgentCore Memory — real per-load continuity, with a real bug fixed along the way
 
 The Orchestrator also has a connected **AgentCore Memory** resource

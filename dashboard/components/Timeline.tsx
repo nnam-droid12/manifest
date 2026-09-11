@@ -9,6 +9,7 @@ const ORCHESTRATOR_MATCH = [
   "Orchestrator (Bedrock AgentCore deployment)",
   "Orchestrator (AgentCore Memory)",
   "Orchestrator (cross-runtime delegation)",
+  "Orchestrator (multi-tenant AgentCore Memory)",
 ];
 
 function initials(agent: string): string {
