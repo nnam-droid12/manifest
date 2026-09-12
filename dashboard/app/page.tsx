@@ -171,6 +171,21 @@ export default function LandingPage() {
               <div className="text-sm font-medium text-emerald-300 mt-4">Track the shipment →</div>
             </Link>
             <Link
+              href="/guardrails"
+              className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
+            >
+              <div className="text-xs font-medium text-emerald-300 mb-2">GUARDRAILS</div>
+              <div className="text-lg font-semibold text-white mb-2">
+                Flip the switch off and watch what slips through
+              </div>
+              <p className="text-sm text-white/60">
+                A real, deployed Bedrock Guardrail sits between every carrier message and the carrier.
+                Toggle it off and send the same message that would otherwise be blocked — see the real
+                dollar risk that guardrail was catching.
+              </p>
+              <div className="text-sm font-medium text-emerald-300 mt-4">Try the toggle →</div>
+            </Link>
+            <Link
               href="/audit"
               className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
             >
