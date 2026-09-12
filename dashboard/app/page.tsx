@@ -127,6 +127,20 @@ export default function LandingPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             <Link
+              href="/dispatch"
+              className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
+            >
+              <div className="text-xs font-medium text-emerald-300 mb-2">LIVE DISPATCH</div>
+              <div className="text-lg font-semibold text-white mb-2">
+                One shipment, five agents, two real problems caught
+              </div>
+              <p className="text-sm text-white/60">
+                Watch a real load run end to end: found, priced, booked — then a rate mismatch and cargo
+                damage both surface downstream and route straight to a human, not silently resolved.
+              </p>
+              <div className="text-sm font-medium text-emerald-300 mt-4">Run the dispatch →</div>
+            </Link>
+            <Link
               href="/cargo"
               className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
             >
@@ -140,6 +154,21 @@ export default function LandingPage() {
                 image as its verdict comes in.
               </p>
               <div className="text-sm font-medium text-emerald-300 mt-4">Run the inspection →</div>
+            </Link>
+            <Link
+              href="/tracking"
+              className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
+            >
+              <div className="text-xs font-medium text-emerald-300 mb-2">LIVE TRACKING</div>
+              <div className="text-lg font-semibold text-white mb-2">
+                A real shipment, on a real map, with a real problem caught in transit
+              </div>
+              <p className="text-sm text-white/60">
+                Watch a truck move along the Chicago → Atlanta corridor while Voice Check-In and
+                Track-and-Trace watch for trouble — then see Customer Update draft a real delay message the
+                moment one shows up.
+              </p>
+              <div className="text-sm font-medium text-emerald-300 mt-4">Track the shipment →</div>
             </Link>
             <Link
               href="/audit"

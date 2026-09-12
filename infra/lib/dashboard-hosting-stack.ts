@@ -48,7 +48,7 @@ export class DashboardHostingStack extends cdk.Stack {
     // (the landing page), so a direct hard-load of a deep link shows the
     // wrong page. Explicit routing rules close that gap for this app's known,
     // finite set of clean-URL routes.
-    const cleanUrlRoutes = ["dashboard", "cargo", "audit", "approvals", "analytics", "login"];
+    const cleanUrlRoutes = ["dashboard", "dispatch", "tracking", "cargo", "audit", "approvals", "analytics", "login"];
     this.websiteBucket = new s3.Bucket(this, "DashboardWebsiteBucket", {
       bucketName: "manifest-freight-dashboard",
       websiteIndexDocument: "index.html",

@@ -6,6 +6,8 @@ import { getSession, logout } from "@/lib/auth";
 
 const NAV = [
   { href: "/dashboard", label: "Overview" },
+  { href: "/dispatch", label: "Live Dispatch" },
+  { href: "/tracking", label: "Live Tracking" },
   { href: "/cargo", label: "Cargo Inspector" },
   { href: "/audit", label: "Audit Trail" },
   { href: "/approvals", label: "Approvals" },
