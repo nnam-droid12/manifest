@@ -10,7 +10,7 @@ Built for the [Agents for Humans Hackathon](https://agentsforhumans.devpost.com/
 >
 > **Second, separate blocker found later:** Bedrock Mantle itself (the stand-in) stopped responding for this account partway through this session's testing — surfaced first as multi-turn tool-calling calls failing while single-turn calls kept working, which pointed at an API-path bug; three real fixes were tried (explicit client timeouts, a Mantle multi-turn compat model, switching Responses-API calls to Chat Completions — the last one a confirmed fix for an identical symptom on the vision model elsewhere in this project) before testing showed single-turn calls had *also* started failing identically, ruling out a code-level cause. Most plausibly a rate/quota ceiling from a full session of heavy Mantle usage across ten-plus agents. Classic Bedrock's block (above) is unchanged and unrelated — this is a second, distinct condition layered on top of it. Documented honestly in [agentcore-deploy/README.md](agentcore-deploy/README.md) rather than claimed-fixed; the underlying architecture was genuinely verified working before this appeared.
 >
-> **Live dashboard:** https://d3aw7wk0rjfln6.cloudfront.net — deployed to S3 + CloudFront via CDK, with real Amazon Cognito login (client-side gated — a static-export SPA has no server to enforce it, standard for this hosting model). Demo login: `broker@manifest-demo.example` / `ManifestDemo2026!`. Verified end to end with an actual headless-browser run against the live site: unauthenticated visits redirect to `/login`, real Cognito sign-in succeeds, direct navigation to a protected route while logged out redirects back. Populated with a real, verified snapshot of this session's agent runs (see the Audit Trail tab); not yet wired to a live backend feed.
+> **Live site:** https://d3aw7wk0rjfln6.cloudfront.net (also mirrored at http://manifest-freight-dashboard.s3-website-us-east-1.amazonaws.com for a URL that literally contains "manifest" — same build, plain S3 website hosting instead of CloudFront, so deep links there need the CDK-managed routing rules in [infra/lib/dashboard-hosting-stack.ts](infra/lib/dashboard-hosting-stack.ts) to resolve correctly). `/` is a public marketing landing page; `/dashboard` is the broker dashboard itself and needs no sign-in or sign-up to view — Amazon Cognito login still exists at `/login` (`broker@manifest-demo.example` / `ManifestDemo2026!`) for a personalized session, but nothing gates on it. `/cargo` replays a real, verified Cargo Condition Agent run with the exact damage regions it flagged highlighted live on the image. Verified end to end with headless-browser runs against the live site. Populated with a real, verified snapshot of this session's agent runs (see the Audit Trail tab); not yet wired to a live backend feed.
 
 ---
 
@@ -53,7 +53,7 @@ Each agent below is a distinct Strands agent with its own tools, its own model c
 | Customer Update Agent | Proactive shipper-facing status updates at milestones and real delays | working — verified drafting both a delay update (direct, no over-apologizing) and a delivered-milestone update (brief, positive) from real shipment data |
 | Playbook & Lane-History Agent | RAG over a Bedrock Knowledge Base of the broker's own historical loads and playbook notes | working (retrieval stand-in) — a real Bedrock Knowledge Base needs a working embedding model, which is blocked by the same account-wide quota gate (verified — Titan Embeddings fails identically to Claude/Nova). Standing in with deterministic keyword retrieval over the same source notes; verified both surfacing real precedent and honestly reporting "no precedent" rather than inventing one. Also wired into Carrier Vetting as a cross-agent integration — verified live pulling a carrier-specific blacklist note into a risk assessment |
 | Orchestrator Agent | Coordinates the swarm per active load; maintains state in AgentCore Memory; decides autonomous vs. human-review paths | working, **deployed live to Bedrock AgentCore Runtime as two separate runtimes** (Orchestrator + a standalone Carrier Vetting Agent runtime it delegates to over a real cross-runtime `InvokeAgentRuntime` call — genuine distributed multi-agent orchestration, not one process with many tools), **with real AgentCore Memory, tenant-scoped for genuine multi-tenant data isolation** (a broker-derived `actor_id` maps each tenant to its own AgentCore Memory namespace — see agentcore-deploy/README.md). Locally, chains Load-Matching → Carrier Vetting → [gate] → Rate Intelligence → Carrier Outreach; the gate is enforced in code, not a model's judgment — verified live on two carriers, both correctly escalated. AgentCore Memory persistence verified with two independent cloud calls where the second recalled a prior finding verbatim. One thing genuinely not resolved: live re-verification of the cross-runtime delegation hit Bedrock Mantle becoming unavailable for this account entirely (not just multi-turn calls, once tested further) — three real fixes attempted, none worked, root cause narrowed to a plausible rate/quota ceiling from heavy same-session usage rather than a code defect. Full story, including two other real bugs found and fixed along the way: [agentcore-deploy/README.md](agentcore-deploy/README.md) |
-| Broker Dashboard | The human-in-the-loop surface: active loads, audit trail, approvals queue, analytics | working — deployed at https://d3aw7wk0rjfln6.cloudfront.net with real Cognito login (verified via headless-browser test against the live site); populated from a real captured snapshot of agent runs, not yet live-wired to a backend |
+| Broker Dashboard | Public marketing site plus the human-in-the-loop surface: active loads, audit trail, approvals queue, analytics, a Cargo Inspector replay | working — deployed at https://d3aw7wk0rjfln6.cloudfront.net, open to view with no sign-in required (Cognito login still available at `/login` for a personalized session, verified via headless-browser test against the live site); populated from a real captured snapshot of agent runs, not yet live-wired to a backend |
 
 ---
 
@@ -89,10 +89,16 @@ The Orchestrator is deployed live to **Amazon Bedrock AgentCore Runtime** — no
 
 ## 5. Screenshots
 
-Live captures from the deployed dashboard (https://d3aw7wk0rjfln6.cloudfront.net) — not mockups.
+Live captures from the deployed site (https://d3aw7wk0rjfln6.cloudfront.net) — not mockups.
 
-**Overview** — active loads, pending approvals, and top-line stats:
+**Landing page** — the public front door, no sign-in required:
+![Landing page](docs/screenshots/landing.png)
+
+**Overview** — active loads, pending approvals, and top-line stats; open to view, no sign-in required:
 ![Dashboard overview](docs/screenshots/overview.png)
+
+**Cargo Inspector** — a replay of a real, verified Cargo Condition Agent run, with the exact damage regions it flagged highlighted live on the image:
+![Cargo Inspector](docs/screenshots/cargo-inspector.png)
 
 **Audit Trail** — every agent action with its full reasoning, including the fraud-detection finding on MC-1187765 (Carrier Vetting Agent), the cargo-condition discrepancy (Cargo Condition Agent), and the AgentCore Memory recall proof (Orchestrator):
 ![Audit trail](docs/screenshots/audit-trail.png)
@@ -103,8 +109,7 @@ Live captures from the deployed dashboard (https://d3aw7wk0rjfln6.cloudfront.net
 **Analytics** — fraud flags caught, margin by lane, on-time performance:
 ![Analytics](docs/screenshots/analytics.png)
 
-**Login** — real Amazon Cognito authentication, not a mock:
-![Login](docs/screenshots/login.png)
+Amazon Cognito login is still real and available at `/login` for brokers who want a personalized session — it just isn't required to view the dashboard.
 
 ---
 
