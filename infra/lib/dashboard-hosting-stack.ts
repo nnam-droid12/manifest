@@ -20,6 +20,7 @@ export interface DashboardHostingStackProps extends cdk.StackProps {
 export class DashboardHostingStack extends cdk.Stack {
   public readonly siteBucket: s3.Bucket;
   public readonly distribution: cloudfront.Distribution;
+  public readonly websiteBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: DashboardHostingStackProps) {
     super(scope, id, props);
@@ -27,6 +28,28 @@ export class DashboardHostingStack extends cdk.Stack {
     this.siteBucket = new s3.Bucket(this, "DashboardSiteBucket", {
       bucketName: `manifest-dashboard-${this.account}-${this.region}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // A second, public-read bucket purely so the dashboard has a URL that
+    // literally contains "manifest" — S3's website-hosting endpoint format
+    // is http://<bucket-name>.s3-website-<region>.amazonaws.com, and
+    // "manifest-dashboard" (unlike the CloudFront distribution's random
+    // subdomain, or the primary bucket above, which needs the account ID
+    // suffix for global-namespace uniqueness) was available unqualified.
+    // HTTP only, no CDN — CloudFront + Cognito above stays the primary,
+    // secure entry point; this is a memorable-URL mirror of the same build.
+    this.websiteBucket = new s3.Bucket(this, "DashboardWebsiteBucket", {
+      bucketName: "manifest-freight-dashboard",
+      websiteIndexDocument: "index.html",
+      websiteErrorDocument: "index.html",
+      publicReadAccess: true,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: true,
+        ignorePublicAcls: true,
+        blockPublicPolicy: false,
+        restrictPublicBuckets: false,
+      }),
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
@@ -62,6 +85,9 @@ export class DashboardHostingStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "DashboardUrl", {
       value: `https://${this.distribution.distributionDomainName}`,
+    });
+    new cdk.CfnOutput(this, "DashboardWebsiteUrl", {
+      value: this.websiteBucket.bucketWebsiteUrl,
     });
     new cdk.CfnOutput(this, "CognitoUserPoolId", { value: props.userPool.userPoolId });
     new cdk.CfnOutput(this, "CognitoUserPoolClientId", {
