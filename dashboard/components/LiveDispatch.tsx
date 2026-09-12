@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { auditTrail, approvals, loads } from "@/lib/demo-data";
 import { Badge } from "@/components/ui";
+import { extractMcNumber, saferSnapshotUrl } from "@/lib/fmcsa";
 
 // The real, chronological lifecycle of Load 1002 (Chicago -> Atlanta, Reefer,
 // Frozen Foods) as it actually ran: found, priced, offered, and then two
@@ -199,11 +200,26 @@ export default function LiveDispatch() {
             </div>
             <div className="text-sm text-slate-700 mt-1">{FRAUD_WATCH.summary}</div>
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">{FRAUD_WATCH.reasoning}</p>
-            {FRAUD_APPROVAL && (
-              <Link href="/approvals" className="text-xs font-medium text-ink hover:underline mt-2 inline-block">
-                Review in Approvals →
-              </Link>
-            )}
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              {FRAUD_APPROVAL && (
+                <Link href="/approvals" className="text-xs font-medium text-ink hover:underline">
+                  Review in Approvals →
+                </Link>
+              )}
+              {(() => {
+                const mc = extractMcNumber(FRAUD_WATCH.summary);
+                return mc ? (
+                  <a
+                    href={saferSnapshotUrl(mc)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md"
+                  >
+                    🔍 Verify MC-{mc} on FMCSA SAFER ↗
+                  </a>
+                ) : null;
+              })()}
+            </div>
           </div>
         </div>
       )}

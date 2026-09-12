@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { approvals as initialApprovals, auditTrail, type Approval } from "@/lib/demo-data";
 import { Badge, PageHeader } from "@/components/ui";
+import { extractMcNumber, saferSnapshotUrl } from "@/lib/fmcsa";
 
 type Decision = "approved" | "rejected" | null;
 
@@ -38,6 +39,7 @@ export default function ApprovalsPage() {
           const decision = decisions[item.id];
           const source = auditTrail.find((e) => e.id === item.sourceEntryId);
           const evidenceOpen = showEvidence[item.id];
+          const mcNumber = extractMcNumber(item.title);
 
           return (
             <div key={item.id} className="relative">
@@ -93,6 +95,17 @@ export default function ApprovalsPage() {
                       <p className="text-sm text-slate-600 mt-2 leading-relaxed border-t border-slate-100 pt-3">
                         {source.reasoning}
                       </p>
+                    )}
+
+                    {mcNumber && (
+                      <a
+                        href={saferSnapshotUrl(mcNumber)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md mt-3"
+                      >
+                        🔍 Verify MC-{mcNumber} on FMCSA SAFER ↗
+                      </a>
                     )}
                   </div>
                 </div>

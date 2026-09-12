@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip } from "react-leaflet";
 import Link from "next/link";
 import { auditTrail } from "@/lib/demo-data";
 import { Badge } from "@/components/ui";
@@ -15,13 +15,33 @@ const NASHVILLE: LatLng = [36.1627, -86.7816];
 const KNOXVILLE: LatLng = [35.9606, -83.9207];
 const ATLANTA: LatLng = [33.749, -84.388];
 
+interface Waypoint {
+  pos: LatLng;
+  label: string;
+  kind: "pickup" | "checkpoint" | "delivery" | "breakdown";
+}
+
 // Both routes are real waypoints on the I-24/I-75 Chicago -> Atlanta corridor.
 // The two scenarios below are two SEPARATE real agent runs on SHP-3001 (a6,
 // a7, a12 in the audit trail) — not one continuous trip that both happened
 // on. Shown as a toggle, not spliced into one story, to keep that honest.
-const ROUTES: Record<"on-schedule" | "breakdown", { waypoints: LatLng[]; stopAt: number }> = {
-  "on-schedule": { waypoints: [CHICAGO, NASHVILLE, ATLANTA], stopAt: 2 },
-  breakdown: { waypoints: [CHICAGO, KNOXVILLE], stopAt: 1 },
+const ROUTES: Record<"on-schedule" | "breakdown", Waypoint[]> = {
+  "on-schedule": [
+    { pos: CHICAGO, label: "Chicago, IL — pickup", kind: "pickup" },
+    { pos: NASHVILLE, label: "Nashville, TN — check-in point", kind: "checkpoint" },
+    { pos: ATLANTA, label: "Atlanta, GA — delivery", kind: "delivery" },
+  ],
+  breakdown: [
+    { pos: CHICAGO, label: "Chicago, IL — pickup", kind: "pickup" },
+    { pos: KNOXVILLE, label: "Knoxville, TN — breakdown reported here", kind: "breakdown" },
+  ],
+};
+
+const PIN_COLOR: Record<Waypoint["kind"], string> = {
+  pickup: "#1b4332",
+  checkpoint: "#94a3b8",
+  delivery: "#1b4332",
+  breakdown: "#ef4444",
 };
 
 const TRACE = auditTrail.find((e) => e.id === "a6")!;
@@ -66,7 +86,8 @@ export default function LiveTrackingMap() {
   const [pos, setPos] = useState<LatLng>(CHICAGO);
   const intervalRef = useRef<number | null>(null);
 
-  const path = useMemo(() => interpolateRoute(ROUTES[scenario].waypoints, 40), [scenario]);
+  const waypoints = ROUTES[scenario];
+  const path = useMemo(() => interpolateRoute(waypoints.map((w) => w.pos), 40), [scenario]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     return () => {
@@ -90,9 +111,6 @@ export default function LiveTrackingMap() {
       setPos(path[i]);
     }, 90);
   }
-
-  const destination = scenario === "breakdown" ? KNOXVILLE : ATLANTA;
-  const destinationLabel = scenario === "breakdown" ? "Knoxville, TN (breakdown reported here)" : "Atlanta, GA";
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
@@ -142,18 +160,18 @@ export default function LiveTrackingMap() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <Polyline positions={path} pathOptions={{ color: "#1b4332", weight: 3, opacity: 0.6 }} />
-          <Marker position={CHICAGO} icon={pinIcon("#1b4332")}>
-            <Popup>Pickup — Chicago, IL</Popup>
-          </Marker>
-          <Marker position={destination} icon={pinIcon(scenario === "breakdown" ? "#ef4444" : "#1b4332")}>
-            <Popup>{destinationLabel}</Popup>
-          </Marker>
-          {scenario === "on-schedule" && (
-            <Marker position={NASHVILLE} icon={pinIcon("#94a3b8")}>
-              <Popup>Nashville, TN — checkpoint</Popup>
+          <Polyline
+            positions={path}
+            pathOptions={{ color: "#1b4332", weight: 3, opacity: 0.7, dashArray: "1 10", lineCap: "round" }}
+          />
+          {waypoints.map((wp) => (
+            <Marker key={wp.label} position={wp.pos} icon={pinIcon(PIN_COLOR[wp.kind])}>
+              <Tooltip permanent direction="top" offset={[0, -8]} className="!text-[10px] !py-0.5 !px-1.5">
+                {wp.label.split(" — ")[0]}
+              </Tooltip>
+              <Popup>{wp.label}</Popup>
             </Marker>
-          )}
+          ))}
           <Marker position={pos} icon={truckIcon} />
         </MapContainer>
       </div>
