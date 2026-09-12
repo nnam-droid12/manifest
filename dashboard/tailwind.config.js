@@ -4,8 +4,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#0b2e4f",
-        canvas: "#f4f5f7",
+        ink: "#1b4332",
+        canvas: "#faf6ec",
+        cream: "#faf6ec",
+        moss: "#40916c",
       },
     },
   },

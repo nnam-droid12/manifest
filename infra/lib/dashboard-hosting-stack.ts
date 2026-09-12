@@ -39,10 +39,24 @@ export class DashboardHostingStack extends cdk.Stack {
     // suffix for global-namespace uniqueness) was available unqualified.
     // HTTP only, no CDN — CloudFront + Cognito above stays the primary,
     // secure entry point; this is a memorable-URL mirror of the same build.
+    //
+    // Plain S3 website hosting has no URI-rewrite feature (unlike the
+    // CloudFront Function below, which appends ".html" to every extensionless
+    // request before the origin fetch even happens) — a request for
+    // "/dashboard" only resolves if an object literally named "dashboard"
+    // exists. Without a fix, that 404s and falls back to the error document
+    // (the landing page), so a direct hard-load of a deep link shows the
+    // wrong page. Explicit routing rules close that gap for this app's known,
+    // finite set of clean-URL routes.
+    const cleanUrlRoutes = ["dashboard", "cargo", "audit", "approvals", "analytics", "login"];
     this.websiteBucket = new s3.Bucket(this, "DashboardWebsiteBucket", {
       bucketName: "manifest-freight-dashboard",
       websiteIndexDocument: "index.html",
       websiteErrorDocument: "index.html",
+      websiteRoutingRules: cleanUrlRoutes.map((route) => ({
+        condition: { httpErrorCodeReturnedEquals: "404", keyPrefixEquals: route },
+        replaceKey: s3.ReplaceKey.with(`${route}.html`),
+      })),
       publicReadAccess: true,
       blockPublicAccess: new s3.BlockPublicAccess({
         blockPublicAcls: true,

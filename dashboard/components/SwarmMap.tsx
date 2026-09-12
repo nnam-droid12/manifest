@@ -113,7 +113,7 @@ export default function SwarmMap({
             cx={center}
             cy={center}
             r={58}
-            fill="#0b2e4f"
+            fill="#1b4332"
             className={orchestratorCount > 0 ? "swarm-pulse" : undefined}
           />
           <circle
@@ -127,7 +127,7 @@ export default function SwarmMap({
           <text x={center} y={center - 4} textAnchor="middle" fontSize="13" fontWeight="700" fill="#fff">
             Orchestrator
           </text>
-          <text x={center} y={center + 14} textAnchor="middle" fontSize="10" fill="#93c5fd">
+          <text x={center} y={center + 14} textAnchor="middle" fontSize="10" fill="#95d5b2">
             {orchestratorCount} runs
           </text>
         </g>

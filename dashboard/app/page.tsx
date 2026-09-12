@@ -1,138 +1,217 @@
-import { loads, stats, approvals, auditTrail } from "@/lib/demo-data";
-import { Card, StatCard, Badge, PageHeader } from "@/components/ui";
 import Link from "next/link";
 
-const STATUS_TONE: Record<string, string> = {
-  Available: "info",
-  "Offer Sent": "success",
-  "Awaiting Review": "warning",
-  Booked: "success",
-};
+const AGENTS = [
+  { name: "Load-Matching", desc: "Continuously scans monitored load boards for freight matching a broker's open lanes." },
+  { name: "Carrier Vetting & Fraud Detection", desc: "FMCSA SAFER lookups and double-brokering red-flag analysis gate whether outreach can proceed autonomously." },
+  { name: "Rate Intelligence", desc: "Recommends a target and ceiling rate per lane from historical and market data, using real statistics, not a guess." },
+  { name: "Carrier Outreach", desc: "Drafts and negotiates rate confirmations within an authorized range, under Bedrock Guardrails." },
+  { name: "Cargo Condition", desc: "Multimodal comparison of pickup vs. delivery photos, flagging real condition discrepancies." },
+  { name: "Voice Check-In", desc: "Places outbound status-check calls via Amazon Connect, Polly, and Transcribe when a carrier goes quiet." },
+  { name: "Document Extraction", desc: "Textract-based parsing of rate confirmations and BOLs, reconciled against the shipment record." },
+  { name: "Track-and-Trace", desc: "Scheduled shipment status checks that reason about whether a delay is actually meaningful before escalating." },
+  { name: "Customer Update", desc: "Proactive shipper-facing status updates at milestones and real delays." },
+  { name: "Playbook & Lane-History", desc: "Retrieval over a broker's own historical loads and playbook notes to surface real precedent." },
+];
 
-const OUTCOME_DOT: Record<string, string> = {
-  info: "#94a3b8",
-  success: "#10b981",
-  warning: "#f59e0b",
-  danger: "#ef4444",
-};
+const GOVERNANCE = [
+  { title: "Hooks", body: "Deterministic rate limiters and call-order guards enforced in code around every tool call — not a prompt asking the model to behave." },
+  { title: "Steering", body: "A supervisor that inspects drafted carrier messages for overreach — promises, guarantees, uncapped terms — and redirects before anything is sent." },
+  { title: "Skills", body: "Detailed checklists and playbooks load on demand instead of living in the system prompt, cutting prompt size by over half." },
+  { title: "Guardrails", body: "A live, deployed Bedrock Guardrail independently catches unauthorized-commitment language, on top of the code-level ceiling check." },
+  { title: "Multi-tenant Memory", body: "Every broker organization gets its own isolated AgentCore Memory namespace from one shared deployment." },
+];
 
-function initials(agent: string): string {
-  const clean = agent.replace(/\(.*?\)/g, "").trim();
-  const words = clean.split(/\s+/).filter((w) => w.length > 1 && w !== "&");
-  return words.slice(0, 2).map((w) => w[0]).join("").toUpperCase();
-}
-
-export default function OverviewPage() {
+export default function LandingPage() {
   return (
-    <div>
-      <PageHeader
-        title="Overview"
-        description="What the agent swarm is working on right now, and what needs your attention."
-      />
+    <div className="bg-cream text-[#14231c] min-h-screen">
+      <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+        <span className="text-lg font-semibold tracking-tight text-ink">Manifest</span>
+        <div className="hidden md:flex items-center gap-8 text-sm text-[#3a4a41]">
+          <a href="#how-it-works" className="hover:text-ink">How it works</a>
+          <a href="#interactions" className="hover:text-ink">See it work</a>
+          <a href="#governance" className="hover:text-ink">Governance</a>
+          <a href="#stack" className="hover:text-ink">Tech stack</a>
+        </div>
+        <Link
+          href="/dashboard"
+          className="text-sm font-medium bg-ink text-white px-4 py-2 rounded-md hover:bg-ink/90"
+        >
+          Open Dashboard
+        </Link>
+      </nav>
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard label="Active Loads" value={String(stats.activeLoads)} />
-        <StatCard label="Pending Approvals" value={String(stats.pendingApprovals)} sub="Needs your review" />
-        <StatCard label="Fraud Flags Caught" value={String(stats.fraudFlagsCaught)} sub="Last 90 days" />
-        <StatCard label="Avg. Margin" value={`${stats.avgMarginPct}%`} sub="Across active lanes" />
-      </div>
+      {/* Hero */}
+      <section className="max-w-6xl mx-auto px-6 pt-16 pb-20 text-center">
+        <div className="inline-block text-xs font-medium text-moss bg-moss/10 border border-moss/20 px-3 py-1 rounded-full mb-6">
+          Built on Strands Agents SDK + Amazon Bedrock AgentCore
+        </div>
+        <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-ink max-w-3xl mx-auto leading-tight">
+          A swarm of AI agents that runs a freight brokerage — with a human always in the loop.
+        </h1>
+        <p className="text-base md:text-lg text-[#3a4a41] max-w-2xl mx-auto mt-5">
+          Manifest matches loads, vets carriers, negotiates rate confirmations, inspects cargo photos, and
+          chases down delayed shipments — ten specialized agents coordinated by one orchestrator, deployed
+          on real AWS infrastructure, with every decision logged and every risky action gated for your review.
+        </p>
+        <div className="flex items-center justify-center gap-3 mt-8">
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium bg-ink text-white px-5 py-3 rounded-md hover:bg-ink/90"
+          >
+            Open the live dashboard — no sign-up required
+          </Link>
+          <a
+            href="#interactions"
+            className="text-sm font-medium border border-ink/20 text-ink px-5 py-3 rounded-md hover:bg-ink/5"
+          >
+            See the agents in action ↓
+          </a>
+        </div>
+      </section>
 
-      {approvals.length > 0 && (
-        <Card className="mb-8 px-5 py-4 border-amber-200 bg-amber-50/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium text-amber-900">
-                {approvals.length} item{approvals.length > 1 ? "s" : ""} waiting on your review
-              </div>
-              <div className="text-xs text-amber-700 mt-0.5">
-                Agents don&apos;t proceed autonomously on these — nothing happens until you decide.
-              </div>
+      {/* Problem */}
+      <section className="bg-white/60 border-y border-ink/10 py-16">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
+          <div>
+            <div className="text-3xl font-semibold text-ink mb-2">Hours</div>
+            <p className="text-sm text-[#3a4a41]">
+              spent per load manually cross-checking carrier authority, negotiating rates by phone and
+              email, and eyeballing damage photos side by side.
+            </p>
+          </div>
+          <div>
+            <div className="text-3xl font-semibold text-ink mb-2">Real fraud</div>
+            <p className="text-sm text-[#3a4a41]">
+              Double-brokering and remit-to mismatches cost brokers real money, and are easy to miss under
+              time pressure without a systematic check on every single carrier.
+            </p>
+          </div>
+          <div>
+            <div className="text-3xl font-semibold text-ink mb-2">No visibility</div>
+            <p className="text-sm text-[#3a4a41]">
+              When software "just handles it," brokers lose the ability to see why a decision was made —
+              until something goes wrong and there's no trail to follow.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works / agent roster */}
+      <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-semibold text-ink">One orchestrator, ten specialized agents</h2>
+          <p className="text-sm text-[#3a4a41] mt-2 max-w-xl mx-auto">
+            Each agent owns one job end to end. The orchestrator coordinates them per load, keeps state in
+            Bedrock AgentCore Memory, and decides which paths run autonomously versus need your sign-off.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {AGENTS.map((agent) => (
+            <div key={agent.name} className="bg-white rounded-xl border border-ink/10 p-5">
+              <div className="text-sm font-semibold text-ink mb-1.5">{agent.name}</div>
+              <div className="text-xs text-[#3a4a41] leading-relaxed">{agent.desc}</div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Hero interactions */}
+      <section id="interactions" className="bg-ink py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl font-semibold text-white">Watch the agents actually work</h2>
+            <p className="text-sm text-white/60 mt-2 max-w-xl mx-auto">
+              Not an approve/reject button — real agent runs, replayed with the exact reasoning they
+              produced.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
             <Link
-              href="/approvals"
-              className="text-xs font-medium bg-ink text-white px-3 py-1.5 rounded-md hover:bg-ink/90"
+              href="/cargo"
+              className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
             >
-              Review now
+              <div className="text-xs font-medium text-emerald-300 mb-2">CARGO INSPECTOR</div>
+              <div className="text-lg font-semibold text-white mb-2">
+                Pickup vs. delivery photo diff, with damage regions highlighted live
+              </div>
+              <p className="text-sm text-white/60">
+                Replays a real, verified Cargo Condition Agent run: the model compares two photos, and the
+                exact regions it flagged — a crushed box, a torn flap, a new puncture mark — light up on the
+                image as its verdict comes in.
+              </p>
+              <div className="text-sm font-medium text-emerald-300 mt-4">Run the inspection →</div>
+            </Link>
+            <Link
+              href="/audit"
+              className="block bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
+            >
+              <div className="text-xs font-medium text-emerald-300 mb-2">AGENT SWARM &amp; AUDIT TRAIL</div>
+              <div className="text-lg font-semibold text-white mb-2">
+                Every agent's run, every tool it called, and why
+              </div>
+              <p className="text-sm text-white/60">
+                Click any node in the live swarm topology to see its full history — including the genuine
+                cross-runtime call from the Orchestrator to a separately deployed Carrier Vetting Agent
+                running on its own Bedrock AgentCore Runtime.
+              </p>
+              <div className="text-sm font-medium text-emerald-300 mt-4">Explore the swarm →</div>
             </Link>
           </div>
-        </Card>
-      )}
+        </div>
+      </section>
 
-      <Card className="mb-8">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              Live Agent Activity
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">Most recent real agent runs across the swarm</p>
+      {/* Governance */}
+      <section id="governance" className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-semibold text-ink">Architectural guarantees, not prompt hopes</h2>
+          <p className="text-sm text-[#3a4a41] mt-2 max-w-xl mx-auto">
+            Anything that touches money, commitments, or another company's data is enforced in code —
+            never left to the model to just get right.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {GOVERNANCE.map((g) => (
+            <div key={g.title} className="bg-white rounded-xl border border-ink/10 p-5">
+              <div className="text-sm font-semibold text-ink mb-1.5">{g.title}</div>
+              <div className="text-xs text-[#3a4a41] leading-relaxed">{g.body}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Tech stack */}
+      <section id="stack" className="bg-white/60 border-y border-ink/10 py-12">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-xs font-medium text-[#3a4a41] uppercase tracking-wide text-center mb-5">
+            Built on
           </div>
-          <Link href="/audit" className="text-xs font-medium text-ink hover:underline">
-            View full swarm & audit trail →
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-ink/70">
+            <span>Strands Agents SDK</span>
+            <span>Amazon Bedrock AgentCore</span>
+            <span>Amazon Bedrock Guardrails</span>
+            <span>Amazon Nova</span>
+            <span>Amazon Textract</span>
+            <span>Amazon Connect / Polly / Transcribe</span>
+            <span>Amazon Cognito</span>
+            <span>AWS CDK</span>
+          </div>
         </div>
-        <div className="px-5 py-4 space-y-3">
-          {auditTrail
-            .slice()
-            .reverse()
-            .slice(0, 5)
-            .map((entry) => (
-              <div key={entry.id} className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                  style={{ backgroundColor: OUTCOME_DOT[entry.outcome] }}
-                >
-                  {initials(entry.agent)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm text-slate-800 truncate">
-                    <span className="font-medium">{entry.agent}</span>{" "}
-                    <span className="text-slate-500">— {entry.summary}</span>
-                  </div>
-                </div>
-                <Badge tone={entry.outcome}>{entry.outcome.toUpperCase()}</Badge>
-              </div>
-            ))}
-        </div>
-      </Card>
+      </section>
 
-      <Card>
-        <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-900">Active Loads</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100">
-              <th className="px-5 py-2.5 font-medium">Lane</th>
-              <th className="px-5 py-2.5 font-medium">Equipment</th>
-              <th className="px-5 py-2.5 font-medium">Rate</th>
-              <th className="px-5 py-2.5 font-medium">Pickup</th>
-              <th className="px-5 py-2.5 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loads.map((load) => (
-              <tr key={load.id} className="border-b border-slate-50 last:border-0">
-                <td className="px-5 py-3">
-                  <div className="font-medium text-slate-900">
-                    {load.origin} → {load.destination}
-                  </div>
-                  <div className="text-xs text-slate-400">{load.commodity}</div>
-                </td>
-                <td className="px-5 py-3 text-slate-600">{load.equipmentType}</td>
-                <td className="px-5 py-3 text-slate-900 font-medium">${load.rate.toLocaleString()}</td>
-                <td className="px-5 py-3 text-slate-600">{load.pickupDate}</td>
-                <td className="px-5 py-3">
-                  <Badge tone={STATUS_TONE[load.status] ?? "info"}>{load.status}</Badge>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+      {/* Footer CTA */}
+      <footer className="max-w-6xl mx-auto px-6 py-16 text-center">
+        <h2 className="text-2xl font-semibold text-ink mb-4">See the swarm at work</h2>
+        <Link
+          href="/dashboard"
+          className="inline-block text-sm font-medium bg-ink text-white px-5 py-3 rounded-md hover:bg-ink/90"
+        >
+          Open the live dashboard — no sign-up required
+        </Link>
+        <p className="text-xs text-[#3a4a41]/70 mt-8">
+          Built for the Agents for Humans Hackathon. Demo data — see agents/README.md in the repo for what's
+          verified live versus stubbed pending AWS account access.
+        </p>
+      </footer>
     </div>
   );
 }

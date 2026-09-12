@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { getSession, logout } from "@/lib/auth";
 
 const NAV = [
-  { href: "/", label: "Overview" },
+  { href: "/dashboard", label: "Overview" },
+  { href: "/cargo", label: "Cargo Inspector" },
   { href: "/audit", label: "Audit Trail" },
   { href: "/approvals", label: "Approvals" },
   { href: "/analytics", label: "Analytics" },
@@ -19,7 +20,9 @@ export default function Sidebar() {
   return (
     <aside className="w-60 shrink-0 bg-ink text-white flex flex-col min-h-screen">
       <div className="px-6 py-6 border-b border-white/10">
-        <div className="text-lg font-semibold tracking-tight">Manifest</div>
+        <Link href="/" className="text-lg font-semibold tracking-tight hover:opacity-80">
+          Manifest
+        </Link>
         <div className="text-xs text-white/50 mt-0.5">Broker Dashboard</div>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
@@ -39,16 +42,24 @@ export default function Sidebar() {
         })}
       </nav>
       <div className="px-6 py-4 border-t border-white/10">
-        {session && <div className="text-xs text-white/60 mb-2 truncate">{session.email}</div>}
-        <button
-          onClick={() => {
-            logout();
-            router.push("/login");
-          }}
-          className="text-xs text-white/50 hover:text-white transition-colors mb-2 block"
-        >
-          Sign out
-        </button>
+        {session ? (
+          <>
+            <div className="text-xs text-white/60 mb-2 truncate">{session.email}</div>
+            <button
+              onClick={() => {
+                logout();
+                router.push("/dashboard");
+              }}
+              className="text-xs text-white/50 hover:text-white transition-colors mb-2 block"
+            >
+              Sign out
+            </button>
+          </>
+        ) : (
+          <Link href="/login" className="text-xs text-white/50 hover:text-white transition-colors mb-2 block">
+            Sign in as a broker
+          </Link>
+        )}
         <div className="text-xs text-white/30">Demo data — see agents/README.md</div>
       </div>
     </aside>
