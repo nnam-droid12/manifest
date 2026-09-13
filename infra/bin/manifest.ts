@@ -8,6 +8,7 @@ import { AgentRuntimeStack } from "../lib/agent-runtime-stack";
 import { KnowledgeBaseStack } from "../lib/knowledge-base-stack";
 import { SchedulingStack } from "../lib/scheduling-stack";
 import { DashboardHostingStack } from "../lib/dashboard-hosting-stack";
+import { BrowserAgentStack } from "../lib/browser-agent-stack";
 
 const app = new cdk.App();
 
@@ -54,3 +55,5 @@ new DashboardHostingStack(app, "Manifest-Dashboard", {
   userPool: auth.userPool,
   userPoolClient: auth.userPoolClient,
 });
+
+new BrowserAgentStack(app, "Manifest-BrowserAgent", { env, tags });

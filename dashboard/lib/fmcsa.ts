@@ -8,6 +8,11 @@ export function extractMcNumber(text: string): string | null {
   return m ? m[1] : null;
 }
 
+export function extractCarrierName(text: string): string | null {
+  const m = text.match(/\(([^)]+)\)/);
+  return m ? m[1] : null;
+}
+
 export function saferSnapshotUrl(mcNumber: string): string {
   const params = new URLSearchParams({
     searchtype: "ANY",

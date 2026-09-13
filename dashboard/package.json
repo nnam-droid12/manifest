@@ -9,11 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@babel/runtime": "^8.0.5",
+    "@cloudscape-design/components": "^3.0.1377",
+    "@cloudscape-design/design-tokens": "^3.0.113",
+    "@cloudscape-design/global-styles": "^1.0.68",
     "amazon-cognito-identity-js": "^6.3.20",
     "autoprefixer": "^10.5.4",
+    "bedrock-agentcore": "^0.4.4",
     "leaflet": "^1.9.4",
     "next": "14.2.5",
     "postcss": "^8.5.26",
+    "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
