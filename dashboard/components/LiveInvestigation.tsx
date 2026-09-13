@@ -54,6 +54,8 @@ export default function LiveInvestigation() {
   const sessionIdRef = useRef<string | null>(null);
   const autoStopRef = useRef<number | null>(null);
   const runIdRef = useRef(0);
+  const [showRenderHelp, setShowRenderHelp] = useState(false);
+  const renderHelpRef = useRef<number | null>(null);
 
   function pushLog(text: string) {
     setLog((prev) => [...prev, { t: timestamp(), text }]);
@@ -61,6 +63,8 @@ export default function LiveInvestigation() {
 
   async function stopSession(silent = false) {
     if (autoStopRef.current) window.clearTimeout(autoStopRef.current);
+    if (renderHelpRef.current) window.clearTimeout(renderHelpRef.current);
+    setShowRenderHelp(false);
     const id = sessionIdRef.current;
     sessionIdRef.current = null;
     setLiveViewUrl(null);
@@ -80,6 +84,7 @@ export default function LiveInvestigation() {
         callLambda({ action: "stop", sessionId: sessionIdRef.current }, 10_000).catch(() => {});
       }
       if (autoStopRef.current) window.clearTimeout(autoStopRef.current);
+      if (renderHelpRef.current) window.clearTimeout(renderHelpRef.current);
     };
   }, []);
 
@@ -113,6 +118,12 @@ export default function LiveInvestigation() {
       pushLog(`Session ${start.sessionId} started — connecting live view…`);
 
       autoStopRef.current = window.setTimeout(() => stopSession(), AUTO_STOP_MS);
+      // There's no callback from BrowserLiveView to know whether the video
+      // actually painted -- if you don't see anything above after a
+      // reasonable wait, this is the only way to surface that honestly
+      // instead of staying silent.
+      setShowRenderHelp(false);
+      renderHelpRef.current = window.setTimeout(() => setShowRenderHelp(true), 8_000);
 
       await new Promise((r) => setTimeout(r, CONNECT_GRACE_MS));
       if (!stillCurrent()) return;
@@ -208,6 +219,16 @@ export default function LiveInvestigation() {
           style={{ width: "100%", aspectRatio: `${REMOTE_WIDTH} / ${REMOTE_HEIGHT}`, background: "#111" }}
         >
           <BrowserLiveView signedUrl={liveViewUrl} remoteWidth={REMOTE_WIDTH} remoteHeight={REMOTE_HEIGHT} />
+        </div>
+      )}
+
+      {liveViewUrl && showRenderHelp && (
+        <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mt-2">
+          Not seeing a browser window above? There's no way for this page to detect whether the video actually
+          painted, so this can't tell you which happened — but the session and search themselves did complete (see
+          the log above). Open your browser's DevTools (F12) → Console tab and look for a red error mentioning
+          "dcv" or "bedrock-agentcore" — that line is the actual cause, and would help get this fixed for real
+          instead of guessed at.
         </div>
       )}
 
