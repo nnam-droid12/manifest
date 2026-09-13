@@ -88,6 +88,30 @@ export default function LiveInvestigation() {
     };
   }, []);
 
+  // The vendored NICE DCV client (inside bedrock-agentcore's BrowserLiveView,
+  // AWS's own bundled code, not ours) can throw an unhandled promise
+  // rejection from its internal license-check step and simply stop --
+  // observed specifically on a slow/high-latency connection, with no
+  // visible frame and no callback telling this component anything failed.
+  // There's no way to fix that internal code from here, but there's no
+  // reason to let it fail silently either.
+  useEffect(() => {
+    if (!liveViewUrl) return;
+    const onRejection = (event: PromiseRejectionEvent) => {
+      if (renderHelpRef.current) window.clearTimeout(renderHelpRef.current);
+      setShowRenderHelp(false);
+      setPhase("error");
+      pushLog(
+        "The AWS live-view video failed to initialize (an internal error in AWS's own browser-streaming client, " +
+          "often triggered by a slow or high-latency connection). The search itself still ran for real -- only " +
+          "the video preview failed. Try again, ideally on a faster connection."
+      );
+      console.error("DCV unhandled rejection:", event.reason);
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => window.removeEventListener("unhandledrejection", onRejection);
+  }, [liveViewUrl]);
+
   async function run() {
     const trimmed = query.trim();
     if (!trimmed) return;
