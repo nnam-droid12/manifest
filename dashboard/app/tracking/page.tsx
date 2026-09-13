@@ -6,7 +6,7 @@ export default function TrackingPage() {
     <div>
       <PageHeader
         title="Live Tracking"
-        description="A real shipment on a real map — Track-and-Trace and Voice Check-In watching for problems in transit, and Customer Update responding when one shows up."
+        description="Click anywhere on the map to place a disruption — the agent reverse-geocodes the real location and computes a genuinely new ETA and customer message from that exact point, not a scripted route."
       />
       <LiveTrackingMapLoader />
     </div>
