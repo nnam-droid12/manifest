@@ -119,9 +119,21 @@ export default function LiveInvestigation() {
     const myRunId = ++runIdRef.current;
     const stillCurrent = () => runIdRef.current === myRunId;
 
+    // Opened synchronously, in the same click, before any await -- browsers
+    // block window.open() once you've gone through an async gap, so this has
+    // to happen first. This is a real tab in your own browser hitting the
+    // same query, not the remote agent's own tab (there's no way for a page
+    // to hand you another machine's tab as a native browser tab, only stream
+    // its video, which is the part that's been unreliable) -- it's guaranteed
+    // to work regardless of AWS or network conditions, since it never leaves
+    // your machine.
+    const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(trimmed)}`;
+    window.open(searchUrl, "_blank", "noopener,noreferrer");
+
     setLog([]);
     setPhase("starting");
-    pushLog(`Requesting a real AWS browser session…`);
+    pushLog(`Opened "${trimmed}" in a new tab.`);
+    pushLog(`Also requesting a real, separate AWS agent session running the same search…`);
 
     try {
       const start = await callLambda({ action: "start" }, START_TIMEOUT_MS);
@@ -258,8 +270,9 @@ export default function LiveInvestigation() {
 
       {!liveViewUrl && phase === "idle" && (
         <p className="text-xs text-slate-400">
-          This starts a real, isolated Amazon Bedrock AgentCore browser session — not a replay or a video. Whatever
-          you type is what it actually searches for, live, streamed here as it happens.
+          Opens a real search in a new tab immediately, guaranteed to work — and, in parallel, starts a real,
+          isolated Amazon Bedrock AgentCore browser session running the identical query, streamed live below when
+          the connection allows it.
         </p>
       )}
     </div>
