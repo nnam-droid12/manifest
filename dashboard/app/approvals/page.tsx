@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { approvals as initialApprovals, auditTrail, type Approval } from "@/lib/demo-data";
 import { Badge, PageHeader } from "@/components/ui";
 import { extractMcNumber, extractCarrierName, saferSnapshotUrl } from "@/lib/fmcsa";
-import LiveVerificationLoader from "@/components/LiveVerificationLoader";
 
 type Decision = "approved" | "rejected" | null;
 
@@ -100,17 +100,22 @@ export default function ApprovalsPage() {
                     )}
 
                     {mcNumber && carrierName && (
-                      <>
-                        <LiveVerificationLoader mcNumber={mcNumber} carrierName={carrierName} />
+                      <div className="flex items-center gap-3 mt-3 flex-wrap">
+                        <Link
+                          href={`/investigate?q=${encodeURIComponent(`MC-${mcNumber} "${carrierName}"`)}`}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-md"
+                        >
+                          🔴 Investigate {carrierName} live →
+                        </Link>
                         <a
                           href={saferSnapshotUrl(mcNumber)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs font-medium text-slate-400 hover:text-slate-600 mt-2 inline-block"
+                          className="text-xs font-medium text-slate-400 hover:text-slate-600"
                         >
                           or open FMCSA SAFER yourself ↗
                         </a>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>

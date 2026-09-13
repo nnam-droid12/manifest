@@ -53,6 +53,7 @@ export class DashboardHostingStack extends cdk.Stack {
       "dispatch",
       "tracking",
       "guardrails",
+      "investigate",
       "cargo",
       "audit",
       "approvals",
