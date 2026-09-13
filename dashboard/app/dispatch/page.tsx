@@ -6,7 +6,7 @@ export default function DispatchPage() {
     <div>
       <PageHeader
         title="Live Dispatch"
-        description="Watch the swarm work a real shipment end to end — Load-Matching finds it, Rate Intelligence prices it, Carrier Outreach books it, then two independent agents catch two real problems downstream."
+        description="Watch the swarm work a real shipment end to end, then type any counter-offer yourself and watch the agent's actual ceiling logic decide accept or escalate — the same deterministic rule the real code runs, not a script."
       />
       <LiveDispatch />
     </div>

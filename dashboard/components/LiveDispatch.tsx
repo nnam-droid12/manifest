@@ -20,6 +20,22 @@ const FRAUD_WATCH = auditTrail.find((e) => e.id === "a2")!;
 const FRAUD_APPROVAL = approvals.find((a) => a.sourceEntryId === "a2");
 
 const LOAD = loads.find((l) => l.id === "1002")!;
+// The real ceiling Rate Intelligence computed for this load (see stage a3's
+// summary: "target $1,650 / ceiling $1,680") -- not a separate made-up number.
+const CEILING = 1680;
+
+// The exact same rule as evaluate_counter_offer() in
+// agents/src/manifest_agents/carrier_outreach/guarded_tools.py -- a straight
+// comparison, not a judgment call, mirrored here so trying it doesn't need a
+// round trip to a server for logic this simple.
+function evaluateCounterOffer(counterRate: number, ceilingRate: number) {
+  const withinCeiling = counterRate <= ceilingRate;
+  return {
+    withinCeiling,
+    action: withinCeiling ? "accept" : "escalate",
+    marginVsCeiling: Math.round((ceilingRate - counterRate) * 100) / 100,
+  };
+}
 
 const OUTCOME_DOT: Record<string, string> = {
   info: "#94a3b8",
@@ -45,6 +61,11 @@ export default function LiveDispatch() {
   const [showFraudWatch, setShowFraudWatch] = useState(false);
   const [liveMessage, setLiveMessage] = useState<string | null>(null);
   const [runKey, setRunKey] = useState(0);
+  const [counterInput, setCounterInput] = useState("");
+  const [testedCounter, setTestedCounter] = useState<number | null>(null);
+
+  const outreachIndex = SEQUENCE_IDS.indexOf("a4");
+  const result = testedCounter != null ? evaluateCounterOffer(testedCounter, CEILING) : null;
 
   function run() {
     setLiveMessage(null);
@@ -53,6 +74,8 @@ export default function LiveDispatch() {
     setThinking(0);
     setShowFraudWatch(false);
     setRunKey((k) => k + 1);
+    setCounterInput("");
+    setTestedCounter(null);
 
     STAGES.forEach((_, i) => {
       window.setTimeout(() => {
@@ -165,6 +188,66 @@ export default function LiveDispatch() {
               </div>
             )}
             <p className="text-xs text-slate-500 mt-2 leading-relaxed">{stage.reasoning}</p>
+
+            {i === outreachIndex && revealed > outreachIndex && (
+              <div className="border-t border-slate-100 mt-3 pt-3">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                  Try it yourself — what if the carrier counters?
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-slate-500">Carrier counters at $</span>
+                  <input
+                    type="number"
+                    value={counterInput}
+                    onChange={(e) => setCounterInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && counterInput) setTestedCounter(Number(counterInput));
+                    }}
+                    placeholder="e.g. 1750"
+                    className="w-28 text-sm border border-slate-300 rounded-md px-2 py-1"
+                  />
+                  <button
+                    onClick={() => counterInput && setTestedCounter(Number(counterInput))}
+                    disabled={!counterInput}
+                    className="text-xs font-medium bg-ink text-white px-3 py-1.5 rounded-md hover:bg-ink/90 disabled:opacity-40"
+                  >
+                    Evaluate
+                  </button>
+                  <span className="text-xs text-slate-400">real ceiling: ${CEILING.toLocaleString()}</span>
+                </div>
+
+                {result && (
+                  <div
+                    className={`mt-3 rounded-lg px-3 py-2.5 border ${
+                      result.withinCeiling ? "border-emerald-200 bg-emerald-50/60" : "border-red-200 bg-red-50/60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge tone={result.withinCeiling ? "success" : "danger"}>
+                        {result.action.toUpperCase()}
+                      </Badge>
+                      <span className="text-xs text-slate-500 font-mono">
+                        evaluate_counter_offer(${testedCounter}, ${CEILING})
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700">
+                      {result.withinCeiling ? (
+                        <>
+                          Within ceiling — send_rate_offer proceeds at ${testedCounter}. Margin to ceiling: $
+                          {result.marginVsCeiling.toLocaleString()}.
+                        </>
+                      ) : (
+                        <>
+                          Exceeds the ${CEILING.toLocaleString()} ceiling by $
+                          {Math.abs(result.marginVsCeiling).toLocaleString()} — send_rate_offer refuses this in
+                          code before anything reaches the carrier. Escalated to the broker instead.
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
         {thinking >= 0 && (
