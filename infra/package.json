@@ -20,6 +20,7 @@
     "typescript": "^5.5.0"
   },
   "dependencies": {
+    "@aws-sdk/client-rekognition": "^3.1131.0",
     "aws-cdk-lib": "^2.150.0",
     "bedrock-agentcore": "^0.4.4",
     "constructs": "^10.3.0",

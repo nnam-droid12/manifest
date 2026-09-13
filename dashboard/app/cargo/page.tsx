@@ -6,7 +6,7 @@ export default function CargoPage() {
     <div>
       <PageHeader
         title="Cargo Inspector"
-        description="The Cargo Condition Agent compares pickup and delivery photos and flags real discrepancies — no human eyeballing two photos side by side."
+        description="Upload your own pickup and delivery photos — a real Amazon Rekognition call analyzes each one live and shows what actually changed, not a scripted verdict on two fixed images."
       />
       <CargoInspector />
     </div>

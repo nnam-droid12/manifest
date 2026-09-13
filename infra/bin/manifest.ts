@@ -9,6 +9,7 @@ import { KnowledgeBaseStack } from "../lib/knowledge-base-stack";
 import { SchedulingStack } from "../lib/scheduling-stack";
 import { DashboardHostingStack } from "../lib/dashboard-hosting-stack";
 import { BrowserAgentStack } from "../lib/browser-agent-stack";
+import { ImageAnalysisStack } from "../lib/image-analysis-stack";
 
 const app = new cdk.App();
 
@@ -57,3 +58,5 @@ new DashboardHostingStack(app, "Manifest-Dashboard", {
 });
 
 new BrowserAgentStack(app, "Manifest-BrowserAgent", { env, tags });
+
+new ImageAnalysisStack(app, "Manifest-ImageAnalysis", { env, tags });
