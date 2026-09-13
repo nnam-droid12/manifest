@@ -67,18 +67,33 @@ async function analyze(base64: string): Promise<Label[]> {
   }
 }
 
+type Diff = "new" | "missing" | "shared";
+
 function PhotoSlot({
   title,
   slot,
   onFile,
   onUseDemo,
+  diffFor,
 }: {
   title: string;
   slot: SlotState;
   onFile: (file: File) => void;
   onUseDemo: () => void;
+  diffFor: (name: string | undefined) => Diff;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const chipStyle: Record<Diff, string> = {
+    new: "bg-red-100 text-red-700 border-red-300 font-semibold",
+    missing: "bg-amber-100 text-amber-700 border-amber-300 font-semibold",
+    shared: "bg-slate-100 text-slate-600 border-slate-200",
+  };
+  const boxStyle: Record<Diff, string> = {
+    new: "border-red-500",
+    missing: "border-amber-500",
+    shared: "border-slate-400",
+  };
 
   return (
     <div>
@@ -103,13 +118,22 @@ function PhotoSlot({
             </div>
           </div>
         )}
+        {slot.previewUrl && (
+          <button
+            onClick={() => inputRef.current?.click()}
+            className="absolute top-2 right-2 text-[11px] font-semibold bg-white/95 text-ink border border-slate-300 px-2.5 py-1.5 rounded-md shadow-sm hover:bg-white flex items-center gap-1"
+          >
+            🔄 Upload a different photo
+          </button>
+        )}
         {slot.labels &&
           slot.labels.flatMap((label, li) =>
-            label.instances.map((inst, ii) =>
-              inst.left != null ? (
+            label.instances.map((inst, ii) => {
+              const d = diffFor(label.name);
+              return inst.left != null ? (
                 <div
                   key={`${li}-${ii}`}
-                  className="absolute border-2 border-red-500 rounded-sm pointer-events-none"
+                  className={`absolute border-[3px] rounded-sm pointer-events-none ${boxStyle[d]}`}
                   style={{
                     left: `${inst.left * 100}%`,
                     top: `${inst.top! * 100}%`,
@@ -117,12 +141,16 @@ function PhotoSlot({
                     height: `${inst.height! * 100}%`,
                   }}
                 >
-                  <span className="absolute -top-5 left-0 whitespace-nowrap text-[10px] font-semibold bg-red-500 text-white px-1 py-0.5 rounded">
+                  <span
+                    className={`absolute -top-6 left-0 whitespace-nowrap text-[10px] font-bold px-1.5 py-0.5 rounded text-white ${
+                      d === "new" ? "bg-red-600" : d === "missing" ? "bg-amber-600" : "bg-slate-600"
+                    }`}
+                  >
                     {label.name}
                   </span>
                 </div>
-              ) : null
-            )
+              ) : null;
+            })
           )}
       </div>
       <input
@@ -132,24 +160,20 @@ function PhotoSlot({
         className="hidden"
         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
       />
-      {slot.previewUrl && (
-        <button
-          onClick={() => inputRef.current?.click()}
-          className="text-xs text-slate-400 hover:text-slate-600 mt-1.5"
-        >
-          Change photo
-        </button>
-      )}
       {slot.labels && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {slot.labels.slice(0, 8).map((l) => (
-            <span
-              key={l.name}
-              className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200"
-            >
-              {l.name} {l.confidence ? Math.round(l.confidence) : ""}%
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {slot.labels.slice(0, 10).map((l) => {
+            const d = diffFor(l.name);
+            return (
+              <span
+                key={l.name}
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${chipStyle[d]}`}
+              >
+                {d === "new" ? "🆕 " : d === "missing" ? "❌ " : ""}
+                {l.name} {l.confidence ? Math.round(l.confidence) : ""}%
+              </span>
+            );
+          })}
         </div>
       )}
     </div>
@@ -201,6 +225,16 @@ export default function CargoInspector() {
   const deliveryNames = new Set((delivery.labels || []).map((l) => l.name));
   const onlyInDelivery = [...deliveryNames].filter((n) => !pickupNames.has(n));
   const onlyInPickup = [...pickupNames].filter((n) => !deliveryNames.has(n));
+  const totalDiffs = onlyInDelivery.length + onlyInPickup.length;
+
+  function pickupDiff(name: string | undefined): Diff {
+    if (!name) return "shared";
+    return onlyInPickup.includes(name) ? "missing" : "shared";
+  }
+  function deliveryDiff(name: string | undefined): Diff {
+    if (!name) return "shared";
+    return onlyInDelivery.includes(name) ? "new" : "shared";
+  }
 
   const ready = !!(pickup.base64 && delivery.base64);
 
@@ -235,12 +269,14 @@ export default function CargoInspector() {
           slot={pickup}
           onFile={(f) => loadFile(f, setPickup)}
           onUseDemo={() => loadDemo("/cargo/pickup.png", setPickup)}
+          diffFor={pickupDiff}
         />
         <PhotoSlot
           title="Delivery"
           slot={delivery}
           onFile={(f) => loadFile(f, setDelivery)}
           onUseDemo={() => loadDemo("/cargo/delivery.png", setDelivery)}
+          diffFor={deliveryDiff}
         />
       </div>
 
@@ -252,29 +288,49 @@ export default function CargoInspector() {
       )}
 
       {status === "done" && (
-        <div className="mt-4 border-t border-slate-100 pt-4 space-y-2">
-          <div className="text-xs text-slate-400 font-mono mb-1">rekognition:DetectLabels() — real, live results</div>
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <div
+            className={`rounded-lg px-4 py-3 flex items-center gap-3 ${
+              totalDiffs > 0 ? "bg-red-50 border border-red-200" : "bg-emerald-50 border border-emerald-200"
+            }`}
+          >
+            <div
+              className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white ${
+                totalDiffs > 0 ? "bg-red-600" : "bg-emerald-600"
+              }`}
+            >
+              {totalDiffs}
+            </div>
+            <div>
+              <div className={`text-sm font-semibold ${totalDiffs > 0 ? "text-red-800" : "text-emerald-800"}`}>
+                {totalDiffs > 0
+                  ? `${totalDiffs} difference${totalDiffs === 1 ? "" : "s"} found between pickup and delivery`
+                  : "No differences found — condition match"}
+              </div>
+              <div className="text-xs text-slate-500 font-mono mt-0.5">
+                rekognition:DetectLabels() — real, live results, highlighted on the photos above
+              </div>
+            </div>
+          </div>
+
           {onlyInDelivery.length > 0 && (
-            <p className="text-sm text-slate-700">
-              <span className="font-medium text-red-700">New at delivery, not seen at pickup:</span>{" "}
+            <p className="text-sm text-slate-700 mt-3">
+              <span className="font-semibold text-red-700">🆕 New at delivery, not seen at pickup:</span>{" "}
               {onlyInDelivery.join(", ")}
             </p>
           )}
           {onlyInPickup.length > 0 && (
-            <p className="text-sm text-slate-700">
-              <span className="font-medium text-amber-700">Seen at pickup, not at delivery:</span>{" "}
+            <p className="text-sm text-slate-700 mt-1.5">
+              <span className="font-semibold text-amber-700">❌ Seen at pickup, missing at delivery:</span>{" "}
               {onlyInPickup.join(", ")}
             </p>
           )}
-          {onlyInDelivery.length === 0 && onlyInPickup.length === 0 && (
-            <p className="text-sm text-slate-700">
-              Rekognition found the same labels in both photos — no difference detected.
-            </p>
-          )}
-          <p className="text-xs text-slate-400 leading-relaxed pt-2">
+
+          <p className="text-xs text-slate-400 leading-relaxed pt-3">
             This is Amazon Rekognition&apos;s real, general-purpose label detection run independently on each photo
             you provided — not a purpose-built damage detector, and not scripted for these two images specifically.
-            Upload two genuinely different photos of your own to see it respond to real content.
+            Boxes only appear on the photo when Rekognition is confident enough to localize an object; real
+            photographs typically produce more of them than the flat synthetic examples.
           </p>
         </div>
       )}
