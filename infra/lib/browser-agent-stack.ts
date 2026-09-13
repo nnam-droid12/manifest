@@ -29,12 +29,13 @@ export class BrowserAgentStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
-      // The Function URL has no auth (a static-hosted SPA has no backend to
-      // hold a real secret), so this caps the worst case of someone finding
-      // the URL and spinning up sessions: at most 2 browser sessions can be
-      // starting at once, and each session self-expires after 5 minutes
-      // regardless of what the caller does.
-      reservedConcurrentExecutions: 2,
+      // Wanted reservedConcurrentExecutions here as a cost/abuse ceiling for
+      // this Function URL (no auth -- a static-hosted SPA has no backend to
+      // hold a real secret), but this account's total Lambda concurrency
+      // pool is too small to reserve any without breaching the required
+      // 10-unreserved minimum for every other function. The account-wide
+      // limit is the real ceiling instead. Each session still self-expires
+      // after 5 minutes regardless of what the caller does.
       bundling: {
         format: nodejs.OutputFormat.CJS,
         target: "node20",
