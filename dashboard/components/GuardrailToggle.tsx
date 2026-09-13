@@ -75,51 +75,65 @@ export default function GuardrailToggle() {
         <div className="mt-5 border-t border-slate-100 pt-4">
           {sent!.guardrailsOn ? (
             wasBlocked ? (
-              <div className="border border-red-200 bg-red-50/60 rounded-lg px-4 py-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge tone="danger">BLOCKED</Badge>
-                  <span className="text-xs text-slate-500 font-mono">ApplyGuardrail → GUARDRAIL_INTERVENED</span>
+              <div className="rounded-lg border border-red-200 bg-red-50 overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl bg-red-600 text-white">
+                    🛑
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-red-800">BLOCKED — message never reaches the carrier</div>
+                    <div className="text-xs text-slate-500 font-mono mt-0.5">
+                      ApplyGuardrail → GUARDRAIL_INTERVENED
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-slate-700">
-                  This message never reaches the carrier. {result.ceilingContext && <>{result.ceilingContext}.</>}
-                </p>
-                {result.dollarsAtRisk && (
-                  <p className="text-sm font-semibold text-red-700 mt-2">
-                    ${result.dollarsAtRisk.toLocaleString()} overpayment risk avoided on this load.
-                  </p>
-                )}
-                {result.note && <p className="text-xs text-slate-500 mt-2 leading-relaxed">{result.note}</p>}
+                <div className="px-4 pb-4">
+                  {result.ceilingContext && <p className="text-sm text-slate-700">{result.ceilingContext}.</p>}
+                  {result.dollarsAtRisk && (
+                    <div className="mt-2 inline-flex items-center gap-2 bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-md">
+                      💰 ${result.dollarsAtRisk.toLocaleString()} overpayment risk avoided
+                    </div>
+                  )}
+                  {result.note && <p className="text-xs text-slate-500 mt-3 leading-relaxed">{result.note}</p>}
+                </div>
               </div>
             ) : (
-              <div className="border border-emerald-200 bg-emerald-50/60 rounded-lg px-4 py-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge tone="success">PASSED</Badge>
-                  <span className="text-xs text-slate-500 font-mono">ApplyGuardrail → NONE</span>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl bg-emerald-600 text-white">
+                    ✅
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-emerald-800">PASSED — proceeds to the carrier</div>
+                    <div className="text-xs text-slate-500 font-mono mt-0.5">ApplyGuardrail → NONE</div>
+                  </div>
                 </div>
-                <p className="text-sm text-slate-700">
-                  No violation detected — this message proceeds to the carrier normally.
-                </p>
               </div>
             )
           ) : (
-            <div className="border border-amber-200 bg-amber-50/60 rounded-lg px-4 py-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Badge tone="warning">UNCHECKED</Badge>
-                <span className="text-xs text-slate-500">guardrail skipped — toggle is off</span>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl bg-amber-500 text-white">
+                  ⚠️
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-amber-800">UNCHECKED — guardrail skipped</div>
+                  <div className="text-xs text-slate-500 mt-0.5">toggle is off — this goes straight through</div>
+                </div>
               </div>
-              <p className="text-sm text-slate-700">
-                This message goes straight to the carrier, no matter what it says.
-              </p>
-              {result.blocked && result.dollarsAtRisk && (
-                <p className="text-sm font-semibold text-amber-700 mt-2">
-                  With guardrails on, this exact message would have been blocked — ${result.dollarsAtRisk.toLocaleString()}{" "}
-                  stayed at risk this time.
-                </p>
-              )}
-              {result.blocked && !result.dollarsAtRisk && (
-                <p className="text-sm font-semibold text-amber-700 mt-2">
-                  With guardrails on, this exact message would have been blocked instead.
-                </p>
+              {result.blocked && (
+                <div className="px-4 pb-4">
+                  {result.dollarsAtRisk ? (
+                    <div className="inline-flex items-center gap-2 bg-amber-500 text-white text-sm font-bold px-3 py-1.5 rounded-md">
+                      ⚠️ With guardrails on, this would have been blocked — ${result.dollarsAtRisk.toLocaleString()}{" "}
+                      stayed at risk
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold text-amber-700">
+                      With guardrails on, this exact message would have been blocked instead.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}

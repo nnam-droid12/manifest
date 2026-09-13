@@ -218,32 +218,48 @@ export default function LiveDispatch() {
 
                 {result && (
                   <div
-                    className={`mt-3 rounded-lg px-3 py-2.5 border ${
-                      result.withinCeiling ? "border-emerald-200 bg-emerald-50/60" : "border-red-200 bg-red-50/60"
+                    className={`mt-3 rounded-lg overflow-hidden border ${
+                      result.withinCeiling ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge tone={result.withinCeiling ? "success" : "danger"}>
-                        {result.action.toUpperCase()}
-                      </Badge>
-                      <span className="text-xs text-slate-500 font-mono">
-                        evaluate_counter_offer(${testedCounter}, ${CEILING})
-                      </span>
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div
+                        className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-xl text-white ${
+                          result.withinCeiling ? "bg-emerald-600" : "bg-red-600"
+                        }`}
+                      >
+                        {result.withinCeiling ? "✅" : "🚫"}
+                      </div>
+                      <div>
+                        <div
+                          className={`text-sm font-bold ${result.withinCeiling ? "text-emerald-800" : "text-red-800"}`}
+                        >
+                          {result.action.toUpperCase()} — ${testedCounter} counter-offer
+                        </div>
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">
+                          evaluate_counter_offer(${testedCounter}, ${CEILING})
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-slate-700">
+                    <div className="px-4 pb-4">
                       {result.withinCeiling ? (
-                        <>
+                        <p className="text-sm text-slate-700">
                           Within ceiling — send_rate_offer proceeds at ${testedCounter}. Margin to ceiling: $
                           {result.marginVsCeiling.toLocaleString()}.
-                        </>
+                        </p>
                       ) : (
                         <>
-                          Exceeds the ${CEILING.toLocaleString()} ceiling by $
-                          {Math.abs(result.marginVsCeiling).toLocaleString()} — send_rate_offer refuses this in
-                          code before anything reaches the carrier. Escalated to the broker instead.
+                          <p className="text-sm text-slate-700">
+                            send_rate_offer refuses this in code before anything reaches the carrier — escalated to
+                            the broker instead.
+                          </p>
+                          <div className="mt-2 inline-flex items-center gap-2 bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-md">
+                            💰 ${Math.abs(result.marginVsCeiling).toLocaleString()} over the ${CEILING.toLocaleString()}{" "}
+                            ceiling
+                          </div>
                         </>
                       )}
-                    </p>
+                    </div>
                   </div>
                 )}
               </div>

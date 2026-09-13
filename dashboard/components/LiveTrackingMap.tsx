@@ -4,7 +4,6 @@ import "leaflet/dist/leaflet.css";
 import { useState } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMapEvents } from "react-leaflet";
-import { Badge } from "@/components/ui";
 
 type LatLng = [number, number];
 
@@ -230,35 +229,45 @@ export default function LiveTrackingMap() {
             </div>
           ) : (
             computed && (
-              <div className="border border-amber-200 bg-amber-50/50 rounded-lg px-4 py-3 space-y-2">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="text-sm font-medium text-slate-900">Track-and-Trace Agent</div>
-                  <Badge tone="warning">RECALCULATED</Badge>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {Math.round(computed.coveredMiles)} mi covered from Chicago, {Math.round(computed.remainingMiles)}{" "}
-                  mi remaining to Atlanta ({Math.round(computed.directMiles)} mi direct)
-                  {computed.detourHours > 0.05 && (
-                    <> — being off the direct line adds ~{computed.detourHours.toFixed(1)}h on its own</>
-                  )}
-                  . At {AVG_SPEED_MPH} mph average and a {severity.label.toLowerCase()} (+{severity.hours}h), new
-                  total delay is <span className="font-semibold">{computed.totalDelayHours.toFixed(1)} hours</span>.
-                </p>
-                <div className="text-sm text-slate-800">
-                  New ETA: <span className="font-semibold">{formatEta(computed.newEta)}</span>{" "}
-                  <span className="text-slate-400 text-xs">(was {formatEta(PROMISED_DELIVERY)})</span>
-                </div>
-                <div className="border-t border-amber-200 pt-2 mt-1">
-                  <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-                    <div className="text-sm font-medium text-slate-900">Customer Update Agent</div>
-                    <Badge tone="success">DRAFTED</Badge>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="shrink-0 w-14 h-14 rounded-full flex items-center justify-center bg-amber-500 text-white text-center leading-tight">
+                    <div>
+                      <div className="text-base font-bold">+{computed.totalDelayHours.toFixed(1)}</div>
+                      <div className="text-[9px] -mt-1">hrs</div>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed italic">
-                    &ldquo;Quick update on your shipment: we hit a {severity.label.toLowerCase()} near {placeName}.
-                    New expected arrival is {formatEta(computed.newEta)}, about{" "}
-                    {computed.totalDelayHours.toFixed(1)} hours later than planned. We'll keep you posted if
-                    anything changes.&rdquo;
+                  <div>
+                    <div className="text-sm font-bold text-amber-800">
+                      Track-and-Trace Agent recalculated the ETA
+                    </div>
+                    <div className="text-xs text-slate-500 font-mono mt-0.5">
+                      New ETA: {formatEta(computed.newEta)}{" "}
+                      <span className="text-slate-400">(was {formatEta(PROMISED_DELIVERY)})</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-4 pb-4">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {Math.round(computed.coveredMiles)} mi covered from Chicago, {Math.round(computed.remainingMiles)}{" "}
+                    mi remaining to Atlanta ({Math.round(computed.directMiles)} mi direct)
+                    {computed.detourHours > 0.05 && (
+                      <> — being off the direct line adds ~{computed.detourHours.toFixed(1)}h on its own</>
+                    )}
+                    . At {AVG_SPEED_MPH} mph average and a {severity.label.toLowerCase()} (+{severity.hours}h).
                   </p>
+                  <div className="border-t border-amber-200 pt-3 mt-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-lg">💬</span>
+                      <span className="text-sm font-bold text-slate-900">Customer Update Agent drafted:</span>
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed italic bg-white rounded-md px-3 py-2 border border-amber-100">
+                      &ldquo;Quick update on your shipment: we hit a {severity.label.toLowerCase()} near{" "}
+                      {placeName}. New expected arrival is {formatEta(computed.newEta)}, about{" "}
+                      {computed.totalDelayHours.toFixed(1)} hours later than planned. We'll keep you posted if
+                      anything changes.&rdquo;
+                    </p>
+                  </div>
                 </div>
               </div>
             )
