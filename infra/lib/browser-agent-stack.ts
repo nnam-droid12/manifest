@@ -27,7 +27,7 @@ export class BrowserAgentStack extends cdk.Stack {
       entry: path.join(__dirname, "..", "lambda", "browser-agent", "index.ts"),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_20_X,
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(45),
       memorySize: 512,
       // Wanted reservedConcurrentExecutions here as a cost/abuse ceiling for
       // this Function URL (no auth -- a static-hosted SPA has no backend to
@@ -63,6 +63,27 @@ export class BrowserAgentStack extends cdk.Stack {
           "bedrock-agentcore:ConnectBrowserAutomationStream",
           "bedrock-agentcore:ConnectBrowserLiveViewStream",
         ],
+        resources: ["*"],
+      })
+    );
+
+    // For the "investigate a real price" flow: screenshot a page the remote
+    // browser navigated to, then read whatever text (including prices) is
+    // actually visible in it via real Amazon Rekognition OCR.
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rekognition:DetectText"],
+        resources: ["*"],
+      })
+    );
+
+    // Pull the product being asked about out of a spoken request ("open
+    // amazon with a ring camera" -> "ring camera") via real Comprehend POS
+    // tagging, and speak the final price-comparison verdict aloud via real
+    // Polly neural TTS.
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["comprehend:DetectSyntax", "polly:SynthesizeSpeech"],
         resources: ["*"],
       })
     );

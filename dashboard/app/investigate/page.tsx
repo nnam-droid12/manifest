@@ -6,7 +6,7 @@ export default function InvestigatePage() {
     <div>
       <PageHeader
         title="Live Investigation"
-        description="Type any carrier, company, or MC number — it opens a real search in a new tab immediately, and starts a real, isolated Bedrock AgentCore browser session running the same query in parallel. Try it with the flagged carrier from Approvals (MC-1187765, Apex Haulers Group), or anything else."
+        description='Speak or type a request like "open amazon with a ring camera and compare the cost" — real Amazon Comprehend extracts the item, a real isolated Bedrock AgentCore browser agent reads live market prices via Rekognition OCR, and real Amazon Polly speaks back a verdict against the value declared on the shipment.'
       />
       <LiveInvestigationLoader />
     </div>
