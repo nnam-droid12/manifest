@@ -8,7 +8,7 @@
 
 **Built with:** Strands Agents SDK · Amazon Bedrock AgentCore · Amazon Bedrock Guardrails · Amazon Nova · Amazon Rekognition · Amazon Comprehend · AWS Lambda · AWS CDK
 
-**Live site:** http://manifest-freight-dashboard.s3-website-us-east-1.amazonaws.com
+**Live site:** https://d3lssmt1g7vadl.cloudfront.net
 
 ---
 
@@ -358,7 +358,7 @@ Deployed to a real AWS account, `us-east-1`. `infra/` holds the full CDK app; ea
 | `Manifest-KnowledgeBase` | Bedrock Knowledge Base for playbook retrieval |
 | `Manifest-AgentRuntime` | The Orchestrator's Bedrock AgentCore Runtime deployment |
 | `Manifest-Scheduling` | EventBridge schedules for Track-and-Trace |
-| `Manifest-Dashboard` | S3 static website hosting for the broker dashboard |
+| `Manifest-Dashboard` | S3 static website hosting for the broker dashboard, fronted by CloudFront for HTTPS (mic access requires a secure context) |
 | `Manifest-BrowserAgent` | Lambda backing the Live Investigation feature's real AgentCore Browser Tool session |
 | `Manifest-ImageAnalysis` | Lambda backing Cargo Inspector's real Amazon Rekognition calls |
 
