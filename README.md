@@ -88,16 +88,18 @@ Independent and small-to-mid-size freight brokers and brokerage back-office staf
 
 ## Architecture
 
-![Manifest architecture](docs/architecture.svg)
+![Manifest architecture](docs/architecture.png)
 
 ```
 Broker Dashboard (Next.js, S3 static hosting)
   │  browser fetch()
   ▼
-AWS Lambda (2 functions)
-  ├── Browser Agent Lambda  →  Bedrock AgentCore Browser Tool  →  real, isolated Chromium session
-  │                                                                (live-viewed in the dashboard via NICE DCV)
-  └── Image Analysis Lambda →  Amazon Rekognition DetectLabels
+AWS Lambda (2 functions — real-time, dashboard-direct)
+  ├── Browser Agent Lambda  →  Amazon Comprehend (extract item from spoken request)
+  │                          → Bedrock AgentCore Browser Tool (real, isolated Chromium session)
+  │                          → Amazon Rekognition DetectText (OCR a real live price)
+  │                          → Amazon Polly (speaks the price-comparison verdict)
+  └── Image Analysis Lambda →  Amazon Rekognition DetectLabels (per cargo photo)
 
 Amazon Bedrock AgentCore Runtime (2 deployed runtimes)
   ├── Orchestrator Runtime
