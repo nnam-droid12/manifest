@@ -23,7 +23,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 px-10 py-8 max-w-6xl">{children}</main>
+      <main className="flex-1 min-w-0 px-10 py-8 max-w-6xl">{children}</main>
     </div>
   );
 }
