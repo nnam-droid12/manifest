@@ -122,7 +122,6 @@ export default function LiveInvestigation() {
   const [verdict, setVerdict] = useState<{ text: string; tone: "cheaper" | "pricier" | "close" } | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const runIdRef = useRef(0);
@@ -217,28 +216,16 @@ export default function LiveInvestigation() {
     // traffic with bot-detection challenges, confirmed against Amazon,
     // eBay, and Walmart directly -- so the agent cross-references live
     // shopping listings instead, the same real prices you'd see yourself).
-    //
-    // When this runs from the voice auto-trigger rather than a direct
-    // button click, the browser's user-activation window (left over from
-    // the mic tap) can already have expired by the time speech recognition
-    // resolves, especially for a longer sentence -- window.open() then
-    // returns null instead of throwing. Rather than silently losing that
-    // tab, fall back to a one-tap manual link so it's still one click away,
-    // never a dead end.
-    setBlockedUrl(null);
+    // Confirmed reliable from the voice auto-trigger too, including on a
+    // full sentence carrying both the item and the declared value.
     const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(item)}`;
-    const win = window.open(amazonUrl, "_blank", "noopener,noreferrer");
-    if (!win) setBlockedUrl(amazonUrl);
+    window.open(amazonUrl, "_blank", "noopener,noreferrer");
 
     setPhase("running");
     setVerdict(null);
     setAudioUrl(null);
     setLog([]);
-    pushLog(
-      win
-        ? `Opened "${item}" on Amazon in a new tab.`
-        : `Couldn't auto-open the Amazon tab (browser popup block) — tap the link below to open it.`
-    );
+    pushLog(`Opened "${item}" on Amazon in a new tab.`);
     pushLog(`Agent cross-referencing live market listings for "${item}"…`);
 
     try {
@@ -395,18 +382,6 @@ export default function LiveInvestigation() {
             </div>
           ))}
         </div>
-      )}
-
-      {blockedUrl && (
-        <a
-          href={blockedUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setBlockedUrl(null)}
-          className="block text-center text-xs font-medium bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-md mb-3 hover:bg-amber-100"
-        >
-          Your browser blocked the auto-opened tab — tap here to open the Amazon search →
-        </a>
       )}
 
       {verdict && (
