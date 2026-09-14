@@ -49,14 +49,25 @@ async function callLambda(body: Record<string, unknown>, timeoutMs = 25_000) {
 // Comprehend call still runs and overwrites this the moment it resolves,
 // which is normally well under a second.
 const TRIGGER_WORDS = new Set(["with", "for", "of", "about"]);
+// "on"/"in"/"at" stop the phrase at "ring on amazon" -- the platform name is
+// never part of the item. "i"/"have"/"worth"/etc. stop it at the start of a
+// declared-value clause ("...ring, I have about $190") so that clause's
+// words never bleed into the item name the way they did before this list
+// existed -- confirmed by testing, the earlier version returned
+// "ring on amazon i have about $190" as the "item" for that exact sentence.
 const STOP_WORDS = new Set([
   "and", "compare", "cost", "costs", "price", "prices", "it", "please",
-  "to", "the", "me", "help", "can", "you", "for",
+  "to", "the", "me", "help", "can", "you", "for", "on", "in", "at",
+  "i", "im", "have", "having", "worth", "is", "its", "around", "roughly",
+  "approximately", "declared", "value",
 ]);
+// A real product name is almost never more than a few words -- caps how far
+// a mis-tagged sentence can run on, on top of the stop-word list above.
+const MAX_ITEM_PHRASE_WORDS = 4;
 function extractItemClientSide(text: string): string {
   const words = text
     .toLowerCase()
-    .replace(/[.,!?]/g, "")
+    .replace(/[.,!?']/g, "")
     .split(/\s+/)
     .filter(Boolean);
   for (let i = 0; i < words.length; i++) {
@@ -64,13 +75,32 @@ function extractItemClientSide(text: string): string {
     let j = i + 1;
     if (words[j] === "a" || words[j] === "an" || words[j] === "the") j++;
     const phrase: string[] = [];
-    while (words[j] && !STOP_WORDS.has(words[j])) {
+    while (
+      words[j] &&
+      !STOP_WORDS.has(words[j]) &&
+      !/^\$?\d/.test(words[j]) &&
+      phrase.length < MAX_ITEM_PHRASE_WORDS
+    ) {
       phrase.push(words[j]);
       j++;
     }
     if (phrase.length > 0) return phrase.join(" ");
   }
   return text.trim();
+}
+
+// Same idea as the item extractor above, run in parallel on the same
+// transcript: pulls a declared dollar value out of a phrase like "I have
+// about $190" or "it's worth 190 dollars" so a single sentence can carry
+// both the item and the value to compare against, with no typing needed.
+function extractDeclaredValueClientSide(text: string): string | null {
+  let m = text.match(/\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/);
+  if (m) return m[1].replace(/,/g, "");
+  m = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:dollars?|bucks?)/i);
+  if (m) return m[1].replace(/,/g, "");
+  m = text.match(/(?:have|worth|valued at|value of|declared|about|around|roughly)\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\b/i);
+  if (m) return m[1].replace(/,/g, "");
+  return null;
 }
 
 function pickLowestPrice(prices: string[]): number | null {
@@ -92,6 +122,7 @@ export default function LiveInvestigation() {
   const [verdict, setVerdict] = useState<{ text: string; tone: "cheaper" | "pricier" | "close" } | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const runIdRef = useRef(0);
@@ -132,12 +163,28 @@ export default function LiveInvestigation() {
       const heard = event.results[0][0].transcript as string;
       setTranscript(heard);
       const quick = extractItemClientSide(heard);
+      const declared = extractDeclaredValueClientSide(heard);
       setItemQuery(quick);
+      if (declared) setCompareValue(declared);
       setPhase("ready");
+
+      // If the sentence carried both the item and a declared value ("check
+      // the price of a ring on amazon, I have about $190"), go straight to
+      // investigating -- no click needed. This has to happen synchronously,
+      // right here, not after the Comprehend refinement below: browsers only
+      // allow window.open() within a user-gesture call stack, and by the
+      // time that async call resolves, the mic tap's gesture has expired.
+      // Passing quick/declared directly (not reading state) sidesteps the
+      // stale-closure problem of state set moments ago in this same tick.
+      if (quick && declared) {
+        investigate(quick, Number(declared));
+      }
 
       // Refine with real Comprehend in the background -- this is the
       // genuine AWS NLP call; the client-side guess above only exists so
-      // the UI never sits on a blank field while this resolves.
+      // the UI never sits on a blank field while this resolves. Only
+      // overwrites the item field; doesn't retrigger an auto-run already
+      // underway from the quick guess above.
       callLambda({ action: "extractItem", text: heard }, 10_000)
         .then((res) => {
           if (res?.item) setItemQuery(res.item);
@@ -153,31 +200,45 @@ export default function LiveInvestigation() {
     recognitionRef.current?.stop();
   }
 
-  async function investigate() {
-    const item = itemQuery.trim();
+  async function investigate(itemOverride?: string, declaredOverride?: number) {
+    const item = (itemOverride ?? itemQuery).trim();
     if (!item) return;
-    const declared = Number(compareValue);
+    const declared = declaredOverride ?? Number(compareValue);
     if (!Number.isFinite(declared) || declared <= 0) return;
 
     const myRunId = ++runIdRef.current;
     const stillCurrent = () => runIdRef.current === myRunId;
 
-    // Synchronous, in the same click as the button press -- guaranteed to
-    // open regardless of AWS or network conditions, since it never leaves
-    // your machine. This is a real Amazon search in your own browser; the
-    // agent below does its own, separate, real market-price lookup in
-    // parallel (major retailers block automated datacenter traffic with
-    // bot-detection challenges, confirmed against Amazon, eBay, and
-    // Walmart directly -- so the agent cross-references live shopping
-    // listings instead, the same real prices you'd see yourself).
+    // Synchronous, in the same call stack as the triggering gesture --
+    // guaranteed to open regardless of AWS or network conditions, since it
+    // never leaves your machine. This is a real Amazon search in your own
+    // browser; the agent below does its own, separate, real market-price
+    // lookup in parallel (major retailers block automated datacenter
+    // traffic with bot-detection challenges, confirmed against Amazon,
+    // eBay, and Walmart directly -- so the agent cross-references live
+    // shopping listings instead, the same real prices you'd see yourself).
+    //
+    // When this runs from the voice auto-trigger rather than a direct
+    // button click, the browser's user-activation window (left over from
+    // the mic tap) can already have expired by the time speech recognition
+    // resolves, especially for a longer sentence -- window.open() then
+    // returns null instead of throwing. Rather than silently losing that
+    // tab, fall back to a one-tap manual link so it's still one click away,
+    // never a dead end.
+    setBlockedUrl(null);
     const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(item)}`;
-    window.open(amazonUrl, "_blank", "noopener,noreferrer");
+    const win = window.open(amazonUrl, "_blank", "noopener,noreferrer");
+    if (!win) setBlockedUrl(amazonUrl);
 
     setPhase("running");
     setVerdict(null);
     setAudioUrl(null);
     setLog([]);
-    pushLog(`Opened "${item}" on Amazon in a new tab.`);
+    pushLog(
+      win
+        ? `Opened "${item}" on Amazon in a new tab.`
+        : `Couldn't auto-open the Amazon tab (browser popup block) — tap the link below to open it.`
+    );
     pushLog(`Agent cross-referencing live market listings for "${item}"…`);
 
     try {
@@ -287,7 +348,7 @@ export default function LiveInvestigation() {
               setItemQuery(extractItemClientSide(e.target.value));
               if (phase === "idle") setPhase("ready");
             }}
-            placeholder='Say or type: "open amazon with a ring camera and compare the cost"'
+            placeholder='Say or type: "check the price of a ring camera on amazon, I have about $190"'
             disabled={running}
             className="w-full text-sm border border-slate-300 rounded-md px-3 py-2 disabled:bg-slate-50"
           />
@@ -317,7 +378,7 @@ export default function LiveInvestigation() {
             />
           </div>
           <button
-            onClick={investigate}
+            onClick={() => investigate()}
             disabled={running || !itemQuery.trim() || !compareValue.trim()}
             className="text-xs font-medium bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white px-4 py-2 rounded-md h-[34px]"
           >
@@ -334,6 +395,18 @@ export default function LiveInvestigation() {
             </div>
           ))}
         </div>
+      )}
+
+      {blockedUrl && (
+        <a
+          href={blockedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setBlockedUrl(null)}
+          className="block text-center text-xs font-medium bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-md mb-3 hover:bg-amber-100"
+        >
+          Your browser blocked the auto-opened tab — tap here to open the Amazon search →
+        </a>
       )}
 
       {verdict && (
@@ -359,9 +432,11 @@ export default function LiveInvestigation() {
 
       {phase === "idle" && !transcript && (
         <p className="text-xs text-slate-400">
-          Tap the mic and say something like &ldquo;open amazon with a ring camera and compare the cost&rdquo; — or just
-          type it. Real Comprehend pulls out the item, a real isolated AWS browser agent reads real live prices via
-          Rekognition OCR, and real Polly speaks back the verdict.
+          Tap the mic and say the item <em>and</em> a declared value in one go — &ldquo;check the price of a ring
+          camera on amazon, I have about $190&rdquo; — and the agent investigates immediately, no typing or clicking
+          needed. Say just the item and it fills the field in for you to finish. Real Comprehend pulls out the item,
+          a real isolated AWS browser agent reads real live prices via Rekognition OCR, and real Polly speaks back
+          the verdict.
         </p>
       )}
     </div>
