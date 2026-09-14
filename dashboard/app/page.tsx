@@ -1,5 +1,51 @@
 import Link from "next/link";
 
+const PROBLEMS = [
+  {
+    stat: "$700M–$1B/yr",
+    title: "Carrier fraud & double-brokering",
+    body: "A carrier's identity, authority, and payment details go largely unverified beyond a manual look-up. FMCSA complaints rose from ~2,000 in 2021 to 8,000+ in 2025.",
+    source: "TIA · FMCSA · Verisk CargoNet",
+  },
+  {
+    stat: "$15B/yr",
+    title: "Manual, reactive tracking",
+    body: "Delays surface late because nobody is proactively watching. 39.3% of deliveries were detained in 2023, and drivers absorb $11K–$19K/year in uncompensated detention.",
+    source: "American Transportation Research Institute",
+  },
+  {
+    stat: "100–125 hrs/wk",
+    title: "Repetitive cross-system re-entry",
+    body: "The same load details get retyped into every load board, TMS, and carrier portal by hand — costing a mid-size brokerage an estimated $104K–$156K a year.",
+    source: "Skyvern",
+  },
+  {
+    stat: "$50B–$60B/yr",
+    title: "Undetected cargo damage",
+    body: "Pickup and delivery photos, when taken at all, are rarely compared side by side before a claim is disputed. LTL damage claims alone run ~$2.4B/year.",
+    source: "Warp Research",
+  },
+];
+
+const SOLUTIONS = [
+  {
+    title: "Real fraud detection, not a manual look-up",
+    body: "FMCSA SAFER authority/insurance checks and double-brokering red-flag analysis (remit-to mismatches, unverifiable carriers) gate whether outreach can proceed autonomously.",
+  },
+  {
+    title: "Proactive tracking that catches delays early",
+    body: "Scheduled status checks reason about whether a delay is actually significant before escalating, and place a real voice check-in call when a carrier goes quiet by email.",
+  },
+  {
+    title: "Autonomous load discovery and full auditability",
+    body: "Agents continuously match freight to open lanes and handle the repetitive cross-system data entry — every action logged with its reasoning, visible in the audit trail, not buried in a log file.",
+  },
+  {
+    title: "Cargo condition verification, before the claim is disputed",
+    body: "Multimodal comparison of pickup vs. delivery photos flags real discrepancies — and just as importantly, correctly reports no discrepancy on a clean pair instead of manufacturing a finding.",
+  },
+];
+
 const AGENTS = [
   { name: "Load-Matching", desc: "Continuously scans monitored load boards for freight matching a broker's open lanes." },
   { name: "Carrier Vetting & Fraud Detection", desc: "FMCSA SAFER lookups and double-brokering red-flag analysis gate whether outreach can proceed autonomously." },
@@ -27,6 +73,8 @@ export default function LandingPage() {
       <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <span className="text-lg font-semibold tracking-tight text-ink">Manifest</span>
         <div className="hidden md:flex items-center gap-8 text-sm text-[#3a4a41]">
+          <a href="#problem" className="hover:text-ink">Problem</a>
+          <a href="#solution" className="hover:text-ink">Solution</a>
           <a href="#how-it-works" className="hover:text-ink">How it works</a>
           <a href="#interactions" className="hover:text-ink">See it work</a>
           <a href="#governance" className="hover:text-ink">Governance</a>
@@ -70,29 +118,52 @@ export default function LandingPage() {
       </section>
 
       {/* Problem */}
-      <section className="bg-white/60 border-y border-ink/10 py-16">
-        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
-          <div>
-            <div className="text-3xl font-semibold text-ink mb-2">Hours</div>
-            <p className="text-sm text-[#3a4a41]">
-              spent per load manually cross-checking carrier authority, negotiating rates by phone and
-              email, and eyeballing damage photos side by side.
+      <section id="problem" className="bg-white/60 border-y border-ink/10 py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <div className="text-xs font-medium text-red-700 bg-red-50 border border-red-200 inline-block px-3 py-1 rounded-full mb-4">
+              The Problem
+            </div>
+            <h2 className="text-2xl font-semibold text-ink">Freight brokerage runs on manual work and unverified trust</h2>
+            <p className="text-sm text-[#3a4a41] mt-2 max-w-2xl mx-auto">
+              None of the systems a broker touches talk to each other, and the trust-and-safety work — checking
+              whether a carrier is even real — is entirely manual. Four processes account for most of the real,
+              documented cost.
             </p>
           </div>
-          <div>
-            <div className="text-3xl font-semibold text-ink mb-2">Real fraud</div>
-            <p className="text-sm text-[#3a4a41]">
-              Double-brokering and remit-to mismatches cost brokers real money, and are easy to miss under
-              time pressure without a systematic check on every single carrier.
-            </p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {PROBLEMS.map((p) => (
+              <div key={p.title} className="bg-white rounded-xl border border-ink/10 p-5">
+                <div className="text-2xl font-semibold text-red-700 mb-2">{p.stat}</div>
+                <div className="text-sm font-semibold text-ink mb-1.5">{p.title}</div>
+                <p className="text-xs text-[#3a4a41] leading-relaxed">{p.body}</p>
+                <p className="text-[11px] text-[#3a4a41]/60 mt-3">{p.source}</p>
+              </div>
+            ))}
           </div>
-          <div>
-            <div className="text-3xl font-semibold text-ink mb-2">No visibility</div>
-            <p className="text-sm text-[#3a4a41]">
-              When software "just handles it," brokers lose the ability to see why a decision was made —
-              until something goes wrong and there's no trail to follow.
-            </p>
+        </div>
+      </section>
+
+      {/* Solution */}
+      <section id="solution" className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <div className="text-xs font-medium text-moss bg-moss/10 border border-moss/20 inline-block px-3 py-1 rounded-full mb-4">
+            The Solution
           </div>
+          <h2 className="text-2xl font-semibold text-ink">Manifest automates the work, not the judgment</h2>
+          <p className="text-sm text-[#3a4a41] mt-2 max-w-2xl mx-auto">
+            None of the four problems above require a human's <em>time</em> — they require a human's
+            <em> occasional judgment</em>. A swarm of specialized agents handles the repetitive, verifiable work
+            end to end, and routes anything genuinely uncertain back to a person.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          {SOLUTIONS.map((s) => (
+            <div key={s.title} className="bg-white rounded-xl border border-ink/10 p-5">
+              <div className="text-sm font-semibold text-ink mb-1.5">{s.title}</div>
+              <p className="text-xs text-[#3a4a41] leading-relaxed">{s.body}</p>
+            </div>
+          ))}
         </div>
       </section>
 
